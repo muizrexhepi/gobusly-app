@@ -1,3 +1,5 @@
+"use client";
+
 import { useAuth } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/stores/authStore";
 import { router } from "expo-router";
@@ -40,6 +42,10 @@ export default function ProfileScreen() {
     router.push("/settings");
   };
 
+  const handlePersonalInfo = () => {
+    router.push("/personal-info");
+  };
+
   const MenuItem = ({
     icon: Icon,
     title,
@@ -74,9 +80,7 @@ export default function ProfileScreen() {
         </View>
         <View className="flex-1">
           <Text
-            className={`text-base font-medium ${
-              isDestructive ? "text-red-500" : "text-gray-900"
-            }`}
+            className={`text-base font-medium ${isDestructive ? "text-red-500" : "text-gray-900"}`}
           >
             {title}
           </Text>
@@ -198,7 +202,7 @@ export default function ProfileScreen() {
               icon={User}
               title="Personal Information"
               subtitle="Name, email, phone number"
-              onPress={() => {}}
+              onPress={handlePersonalInfo}
             />
             <MenuItem
               icon={CreditCard}
