@@ -10,6 +10,7 @@ export interface User {
   isPhoneVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  notifications: UserNotifications;
 }
 
 export interface AuthTokens {
@@ -34,4 +35,20 @@ export interface LoginCredentials {
 export interface OAuthProvider {
   google: "google";
   apple: "apple";
+}
+
+export interface UserNotifications {
+  booking_confirmations: boolean;
+  departure_reminders: boolean;
+  promotions: boolean;
+  account_updates: boolean;
+  security_alerts: boolean;
+}
+
+export interface UserNotificationsDTO {
+  booking_confirmations: boolean;
+  departure_reminders: boolean;
+  promotions: boolean;
+  account_updates: boolean;
+  security_alerts: boolean;
 }

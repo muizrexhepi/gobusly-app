@@ -20,7 +20,7 @@ export default function RootLayout() {
         <Stack.Screen name="(profile)" />
         <Stack.Screen name="(modals)" options={{ presentation: "modal" }} />
       </Stack>
-      <StatusBar style="dark" />
+      <StatusBar style="auto" />
     </>
   );
 }

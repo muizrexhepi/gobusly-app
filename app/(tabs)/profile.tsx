@@ -1,279 +1,301 @@
-"use client";
-
-import { useAuth } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/stores/authStore";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import {
-  Bell,
-  ChevronRight,
-  Clock,
-  CreditCard,
-  Heart,
-  HelpCircle,
-  LogOut,
-  Mail,
-  Settings,
-  User,
-} from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function ProfileScreen() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
-  const { logout } = useAuth();
-  console.log({ user });
-  const handleLogin = () => {
-    router.push("/(modals)/login");
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  const handleLogin = () => router.push("/(modals)/login");
+
+  const handleHelp = async () =>
+    await WebBrowser.openBrowserAsync("https://support.gobusly.com");
+
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: logout,
+      },
+    ]);
   };
 
-  const handleLogout = () => {
-    logout();
-  };
-
-  const handleHelpSupport = async () => {
-    try {
-      await WebBrowser.openBrowserAsync("https://support.gobusly.com");
-    } catch (error) {
-      console.error("Failed to open browser:", error);
+  const handleClearLocalData = () => {
+    if (isAuthenticated) {
+      Alert.alert(
+        "Data is Cloud Synced",
+        "Your data is safely stored in the cloud and synced across devices. Local data clearing is not available for authenticated users.",
+        [{ text: "OK" }]
+      );
+      return;
     }
+
+    Alert.alert(
+      "Clear Local Data",
+      "This will remove all locally stored data including search history, preferences, and cached information. This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Clear Data",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Clear AsyncStorage except auth data
+              const keys = await AsyncStorage.getAllKeys();
+              const nonAuthKeys = keys.filter(
+                (key) => !key.includes("auth") && !key.includes("token")
+              );
+
+              if (nonAuthKeys.length > 0) {
+                await AsyncStorage.multiRemove(nonAuthKeys);
+              }
+
+              Alert.alert(
+                "Data Cleared",
+                "Local data has been successfully cleared.",
+                [{ text: "OK" }]
+              );
+            } catch (error) {
+              Alert.alert(
+                "Error",
+                "Failed to clear local data. Please try again.",
+                [{ text: "OK" }]
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const handleSettings = () => {
-    router.push("/settings");
-  };
+  const handlePrivacyPolicy = async () =>
+    await WebBrowser.openBrowserAsync(
+      "https://gobusly.com/legal/privacy-policy"
+    );
 
-  const handlePersonalInfo = () => {
-    router.push("/personal-info");
-  };
+  const handleTermsConditions = async () =>
+    await WebBrowser.openBrowserAsync(
+      "https://gobusly.com/legal/terms-of-service"
+    );
 
   const MenuItem = ({
-    icon: Icon,
+    icon,
     title,
     subtitle,
-    value,
     onPress,
-    showNotification = false,
-    isDestructive = false,
-    showDivider = true,
+    destructive = false,
+    disabled = false,
   }: {
-    icon: any;
+    icon: React.ReactNode;
     title: string;
     subtitle?: string;
-    value?: string;
-    onPress?: () => void;
-    showNotification?: boolean;
-    isDestructive?: boolean;
-    showDivider?: boolean;
+    onPress: () => void;
+    destructive?: boolean;
+    disabled?: boolean;
   }) => (
     <TouchableOpacity
-      className={`flex-row items-center justify-between py-4 px-6 bg-white ${showDivider ? "border-b border-gray-50" : ""}`}
       onPress={onPress}
-      activeOpacity={0.6}
+      disabled={disabled}
+      className={`flex-row items-center justify-between p-4 bg-white border-b border-gray-100 ${
+        disabled ? "opacity-50" : ""
+      }`}
     >
-      <View className="flex-row items-center flex-1">
+      <View className="flex-row items-center">
         <View
-          className={`w-9 h-9 rounded-full items-center justify-center mr-4 ${
-            isDestructive ? "bg-red-50" : "bg-gray-50"
+          className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+            destructive ? "bg-red-50" : "bg-gray-50"
           }`}
         >
-          <Icon size={18} color={isDestructive ? "#EF4444" : "#6B7280"} />
+          {icon}
         </View>
-        <View className="flex-1">
+        <View>
           <Text
-            className={`text-base font-medium ${isDestructive ? "text-red-500" : "text-gray-900"}`}
+            className={`text-base font-medium ${
+              destructive ? "text-red-500" : "text-gray-900"
+            }`}
           >
             {title}
           </Text>
           {subtitle && (
-            <Text className="text-gray-500 text-sm mt-0.5">{subtitle}</Text>
+            <Text className="text-sm text-gray-500">{subtitle}</Text>
           )}
         </View>
       </View>
-      <View className="flex-row items-center">
-        {showNotification && (
-          <View className="w-2 h-2 bg-pink-500 rounded-full mr-3" />
-        )}
-        {value && (
-          <Text className="text-gray-500 text-sm mr-3 font-medium">
-            {value}
-          </Text>
-        )}
-        <ChevronRight size={16} color="#D1D5DB" />
-      </View>
+      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
     </TouchableOpacity>
   );
 
-  const SectionHeader = ({ title }: { title: string }) => (
-    <View className="px-6 py-3 bg-gray-50">
-      <Text className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-        {title}
-      </Text>
-    </View>
-  );
-
-  if (!isAuthenticated) {
-    return (
-      <View className="flex-1 bg-gray-50">
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          <View className="bg-white mt-6 mx-6 rounded-xl p-6 shadow-sm">
-            <Text className="text-lg font-semibold text-gray-900 mb-2">
-              Ready to book your next trip?
-            </Text>
-            <Text className="text-gray-600 text-base mb-6 leading-6">
-              Sign in to access your bookings, save favorite routes, and get
-              personalized travel recommendations.
-            </Text>
-
-            <TouchableOpacity
-              className="bg-pink-600 py-4 px-6 rounded-xl active:bg-pink-700"
-              onPress={handleLogin}
-              activeOpacity={0.9}
-              style={{
-                shadowColor: "#FF385C",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <Text className="text-white font-semibold text-base text-center">
-                Sign In or Create Account
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Quick Access */}
-          <View className="mt-6">
-            <SectionHeader title="Quick Access" />
-            <View className="bg-white">
-              <MenuItem
-                icon={Bell}
-                title="Notifications"
-                subtitle="Stay updated with travel alerts"
-                onPress={() => {}}
-                showNotification={true}
-              />
-              <MenuItem
-                icon={Settings}
-                title="App Settings"
-                subtitle="Language, notifications, and more"
-                onPress={() => {}}
-              />
-              <MenuItem
-                icon={HelpCircle}
-                title="Help & Support"
-                subtitle="Get help with your booking"
-                onPress={() => {}}
-                showDivider={false}
-              />
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
   return (
-    <View className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="bg-white px-6 py-8">
-          <View className="flex-row items-center">
-            <View className="w-16 h-16 bg-pink-600 rounded-full items-center justify-center mr-4">
-              <Text className="text-white font-bold text-xl">
-                {user?.name?.charAt(0)?.toUpperCase() || "U"}
-              </Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900">
-                {user?.name || "User"}
-              </Text>
-              <Text className="text-gray-600 text-base mt-1">
-                {user?.email}
-              </Text>
-            </View>
-          </View>
-        </View>
+    <ScrollView className="flex-1 bg-gray-50">
+      {/* Header */}
+      <View className="bg-white px-6 py-8">
+        {isAuthenticated ? (
+          <>
+            <Text className="text-xl font-bold">{user?.name}</Text>
+            <Text className="text-gray-500 mt-1">{user?.email}</Text>
+          </>
+        ) : (
+          <TouchableOpacity
+            onPress={handleLogin}
+            className="bg-pink-600 py-3 px-4 rounded-lg"
+          >
+            <Text className="text-white text-center font-semibold">
+              Sign In / Create Account
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
-        {/* Account Section */}
+      {isAuthenticated && (
         <View className="mt-6">
-          <SectionHeader title="Account" />
-          <View className="bg-white">
-            <MenuItem
-              icon={User}
-              title="Personal Information"
-              subtitle="Name, email, phone number"
-              onPress={handlePersonalInfo}
-            />
-            <MenuItem
-              icon={CreditCard}
-              title="Payment Methods"
-              subtitle="Manage cards and payment options"
-              onPress={() => {}}
-            />
-            <MenuItem
-              icon={Heart}
-              title="Saved Routes"
-              subtitle="Your favorite travel routes"
-              onPress={() => {}}
-              showDivider={false}
-            />
-          </View>
+          <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
+            Account & Profile
+          </Text>
+          <MenuItem
+            icon={<Ionicons name="person-outline" size={18} color="#6B7280" />}
+            title="Personal Information"
+            subtitle="Manage your account details"
+            onPress={() => router.push("/personal-info")}
+          />
+          <MenuItem
+            icon={<Ionicons name="time-outline" size={18} color="#6B7280" />}
+            title="Booking History"
+            subtitle="View your past and upcoming trips"
+            onPress={() => router.push("/(tabs)/bookings")}
+          />
+          <MenuItem
+            icon={<Ionicons name="mail-outline" size={18} color="#6B7280" />}
+            title="Inbox"
+            subtitle="Messages and updates"
+            onPress={() => router.push("/inbox")}
+          />
         </View>
+      )}
 
-        {/* Bookings Section */}
-        <View className="mt-6">
-          <SectionHeader title="Bookings" />
-          <View className="bg-white">
-            <MenuItem
-              icon={Clock}
-              title="Booking History"
-              subtitle="View your past trips"
-              onPress={() => {}}
-            />
-            <MenuItem
-              icon={Mail}
-              title="Inbox"
-              subtitle="Booking confirmations and updates"
-              onPress={() => {}}
-              showNotification={true}
-              showDivider={false}
-            />
-          </View>
-        </View>
+      {/* Settings & Preferences */}
+      <View className="mt-6">
+        <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
+          Settings & Preferences
+        </Text>
+        <MenuItem
+          icon={
+            <Ionicons name="notifications-outline" size={18} color="#6B7280" />
+          }
+          title="Notifications"
+          subtitle={
+            isAuthenticated
+              ? "Manage your notification preferences"
+              : "Configure notifications"
+          }
+          onPress={() => router.push("/notifications")}
+        />
+        <MenuItem
+          icon={<Ionicons name="globe-outline" size={18} color="#6B7280" />}
+          title="Language & Currency"
+          subtitle="Change display language and currency"
+          onPress={() => router.push("/language-currency")}
+        />
+        <MenuItem
+          icon={
+            <Ionicons name="lock-closed-outline" size={18} color="#6B7280" />
+          }
+          title="Privacy Settings"
+          subtitle="Control your privacy and data sharing"
+          onPress={() => router.push("/privacy-settings")}
+        />
+        <MenuItem
+          icon={<Ionicons name="trash-outline" size={18} color="#EF4444" />}
+          title="Clear Local Data"
+          subtitle={
+            isAuthenticated
+              ? "Data is synced to cloud"
+              : "Remove cached data and preferences"
+          }
+          destructive={!isAuthenticated}
+          disabled={isAuthenticated}
+          onPress={handleClearLocalData}
+        />
+      </View>
 
-        {/* Support Section */}
-        <View className="mt-6">
-          <SectionHeader title="Support" />
-          <View className="bg-white">
-            <MenuItem
-              icon={Settings}
-              title="App Settings"
-              subtitle="Notifications, language, and preferences"
-              onPress={handleSettings}
-            />
-            <MenuItem
-              icon={HelpCircle}
-              title="Help & Support"
-              subtitle="Contact us or browse FAQs"
-              onPress={handleHelpSupport}
-              showDivider={false}
-            />
-          </View>
-        </View>
+      {/* Services */}
+      <View className="mt-6">
+        <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
+          Services
+        </Text>
+        <MenuItem
+          icon={
+            <Ionicons name="help-circle-outline" size={18} color="#6B7280" />
+          }
+          title="Need Help?"
+          subtitle="Get support and contact us"
+          onPress={handleHelp}
+        />
+        <MenuItem
+          icon={<Ionicons name="map-outline" size={18} color="#6B7280" />}
+          title="Station Locations"
+          subtitle="Find bus stations and stops"
+          onPress={() => router.push("/station-locations")}
+        />
+      </View>
 
-        {/* Sign Out */}
+      {/* Legal & App Info */}
+      <View className="mt-6">
+        <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
+          Legal & Info
+        </Text>
+        <MenuItem
+          icon={
+            <Ionicons name="document-text-outline" size={18} color="#6B7280" />
+          }
+          title="Terms & Conditions"
+          subtitle="Read our terms of service"
+          onPress={handleTermsConditions}
+        />
+        <MenuItem
+          icon={
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={18}
+              color="#6B7280"
+            />
+          }
+          title="Privacy Policy"
+          subtitle="Learn how we protect your data"
+          onPress={handlePrivacyPolicy}
+        />
+      </View>
+
+      {/* Sign Out */}
+      {isAuthenticated && (
         <View className="mt-6 mb-6">
-          <View className="bg-white">
-            <MenuItem
-              icon={LogOut}
-              title="Sign Out"
-              onPress={handleLogout}
-              isDestructive={true}
-              showDivider={false}
-            />
-          </View>
+          <MenuItem
+            icon={<Ionicons name="log-out-outline" size={18} color="#EF4444" />}
+            title="Sign Out"
+            subtitle="Sign out of your account"
+            destructive
+            onPress={handleSignOut}
+          />
         </View>
-      </ScrollView>
-    </View>
+      )}
+
+      <View className="px-6 py-4">
+        <Text className="text-gray-400 text-sm">Version 1.0.0</Text>
+        <Text className="text-gray-400 text-xs mt-1">
+          {isAuthenticated
+            ? `Signed in as ${user?.email}`
+            : "Using app in guest mode"}
+        </Text>
+      </View>
+    </ScrollView>
   );
 }

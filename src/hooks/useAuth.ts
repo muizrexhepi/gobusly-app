@@ -1,4 +1,5 @@
 import { useAuthStore } from "@/src/stores/authStore";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect } from "react";
 
 export const useAuth = () => {
@@ -75,8 +76,11 @@ export const useAuth = () => {
   );
 
   const handleLogout = useCallback(async () => {
+    const router = useRouter();
+
     try {
-      await logout();
+      await logout(); // your logout function
+      router.push("/"); // redirect to homepage
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };

@@ -33,12 +33,12 @@ export default function ProfileLayout() {
         options={{ headerTitle: "Personal Information" }}
       />
       <Stack.Screen
-        name="payment-methods"
-        options={{ headerTitle: "Payment Methods" }}
+        name="language-currency"
+        options={{ headerTitle: "Language & Currency" }}
       />
       <Stack.Screen
-        name="saved-routes"
-        options={{ headerTitle: "Saved Routes" }}
+        name="notifications"
+        options={{ headerTitle: "Notifications" }}
       />
       <Stack.Screen
         name="booking-history"
