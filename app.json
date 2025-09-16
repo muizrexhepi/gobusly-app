@@ -60,7 +60,13 @@
         }
       ],
       "expo-secure-store",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow GoBusly to use your location to find nearby bus stations."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

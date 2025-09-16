@@ -6,7 +6,6 @@ import { UserNotifications } from "@/src/types/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import {
-  Bell,
   CheckCircle,
   ChevronLeft,
   Clock,
@@ -260,26 +259,6 @@ export default function NotificationsScreen() {
 
       <ScrollView className="bg-gray-50 flex-1">
         <View className="px-6 py-6">
-          {/* Header Section */}
-          <View className="mb-6">
-            <View className="flex-row items-center mb-3">
-              <View className="w-12 h-12 rounded-full bg-pink-100 items-center justify-center mr-4">
-                <Bell color="#db2777" size={24} />
-              </View>
-              <View>
-                <Text className="text-2xl font-bold text-gray-900">
-                  Notification Settings
-                </Text>
-                <Text className="text-gray-600">
-                  {isAuthenticated
-                    ? "Manage how you receive updates"
-                    : "Configure your notification preferences"}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Guest User Info */}
           {!isAuthenticated && (
             <View className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
               <Text className="text-blue-900 font-medium mb-1">Guest Mode</Text>

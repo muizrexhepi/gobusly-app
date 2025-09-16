@@ -1,11 +1,13 @@
+import { UserNotifications, UserPrivacySettings } from "@/src/types/auth";
 import { apiClient } from "./client";
 
 export interface ProfileUpdateResponse {
-  id: string;
+  _id: string; // Changed from 'id' to '_id' to match your structure
   name?: string;
   phone?: string;
   email?: string;
-  notifications?: UserNotificationsDTO;
+  notifications?: UserNotifications;
+  privacySettings?: UserPrivacySettings; // Added privacy settings
   message?: string;
 }
 
@@ -14,7 +16,8 @@ export interface UserNotificationsDTO {
   departure_reminders: boolean;
   promotions: boolean;
   account_updates: boolean;
-  sms: {
+  security_alerts: boolean;
+  sms?: {
     booking_confirmations: boolean;
     departure_reminders: boolean;
     promotions: boolean;
@@ -69,6 +72,78 @@ class ProfileService {
         response.data?.message || "Failed to update notifications"
       );
     }
+    return response.data;
+  }
+
+  // Added privacy settings method
+  async editPrivacySettings(
+    userId: string,
+    privacySettings: UserPrivacySettings
+  ): Promise<ProfileUpdateResponse> {
+    const response = await apiClient.post(`/auth/privacy/update/${userId}`, {
+      privacySettings,
+    });
+    if (!response.data?._id) {
+      throw new Error(
+        response.data?.message || "Failed to update privacy settings"
+      );
+    }
+    return response.data;
+  }
+
+  // Additional profile methods you might need
+  async updateProfile(
+    userId: string,
+    profileData: {
+      name?: string;
+      phone?: string;
+      firstName?: string;
+      lastName?: string;
+      avatar?: string;
+    }
+  ): Promise<ProfileUpdateResponse> {
+    const response = await apiClient.put(`/profile/${userId}`, profileData);
+    if (!response.data?._id) {
+      throw new Error(response.data?.message || "Failed to update profile");
+    }
+    return response.data;
+  }
+
+  async uploadAvatar(
+    userId: string,
+    avatarFile: FormData
+  ): Promise<ProfileUpdateResponse> {
+    const response = await apiClient.post(
+      `/profile/${userId}/avatar`,
+      avatarFile,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    if (!response.data?._id) {
+      throw new Error(response.data?.message || "Failed to upload avatar");
+    }
+    return response.data;
+  }
+
+  async deleteAccount(
+    userId: string,
+    reason: string,
+    feedback?: string
+  ): Promise<{ message: string }> {
+    const response = await apiClient.delete(`/profile/${userId}`, {
+      data: { reason, feedback },
+    });
+    return response.data;
+  }
+
+  // Export user data for GDPR compliance
+  async exportUserData(userId: string): Promise<Blob> {
+    const response = await apiClient.get(`/profile/${userId}/export`, {
+      responseType: "blob",
+    });
     return response.data;
   }
 }
