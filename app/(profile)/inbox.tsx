@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/src/stores/authStore";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   AlertCircle,
   CheckCircle,
@@ -249,7 +249,7 @@ export default function InboxScreen() {
       <TouchableOpacity
         onPress={() => {
           handleMarkAsRead(item.id);
-          router.push(`/inbox/${item.id}`);
+          // router.push(`/inbox/${item.id}`);
         }}
         className={`bg-white mx-4 my-2 rounded-xl p-4 shadow-sm border ${
           item.isRead ? "border-gray-100" : "border-pink-200 bg-pink-50"
@@ -352,60 +352,44 @@ export default function InboxScreen() {
   );
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerTitle: "Inbox",
-          headerStyle: { backgroundColor: "#db2777" },
-          headerTitleStyle: { fontSize: 20, fontWeight: "bold", color: "#fff" },
-          headerTintColor: "#fff",
-          headerLeft: backButton,
-        }}
-      />
-
-      <View className="flex-1 bg-gray-50">
-        {/* Filter Tabs */}
-        <View className="bg-white py-4 px-4 border-b border-gray-100">
-          <View className="flex-row">
-            <FilterButton
-              filterType="all"
-              label="All"
-              count={messages.length}
-            />
-            <FilterButton
-              filterType="unread"
-              label="Unread"
-              count={unreadCount}
-            />
-            <FilterButton
-              filterType="starred"
-              label="Starred"
-              count={starredCount}
-            />
-          </View>
-        </View>
-
-        {/* Messages List */}
-        {filteredMessages.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <FlatList
-            data={filteredMessages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <MessageItem item={item} />}
-            contentContainerStyle={{ paddingVertical: 8 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor="#db2777"
-                colors={["#db2777"]}
-              />
-            }
-            showsVerticalScrollIndicator={false}
+    <View className="flex-1 bg-gray-50">
+      {/* Filter Tabs */}
+      <View className="bg-white py-4 px-4 border-b border-gray-100">
+        <View className="flex-row">
+          <FilterButton filterType="all" label="All" count={messages.length} />
+          <FilterButton
+            filterType="unread"
+            label="Unread"
+            count={unreadCount}
           />
-        )}
+          <FilterButton
+            filterType="starred"
+            label="Starred"
+            count={starredCount}
+          />
+        </View>
       </View>
-    </>
+
+      {/* Messages List */}
+      {filteredMessages.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <FlatList
+          data={filteredMessages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <MessageItem item={item} />}
+          contentContainerStyle={{ paddingVertical: 8 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#15203e"
+              colors={["#15203e"]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
   );
 }

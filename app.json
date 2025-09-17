@@ -17,7 +17,8 @@
             "CFBundleURLName": "gobuslyapp",
             "CFBundleURLSchemes": ["gobuslyapp"]
           }
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,6 +39,10 @@
             "scheme": "gobuslyapp"
           }
         }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -71,6 +76,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ad70bbae-4070-4a1c-90d3-3aa4182db899"
+      }
     }
   }
 }

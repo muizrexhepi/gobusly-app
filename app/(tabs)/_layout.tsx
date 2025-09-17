@@ -1,28 +1,23 @@
+import { Colors } from "@/src/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
+import { StyleSheet } from "react-native";
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#be185d",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.text.placeholder,
         tabBarStyle: {
-          height: 90,
+          position: "absolute",
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
+          elevation: 0,
           paddingTop: 8,
-          paddingBottom: 8,
-          backgroundColor: "#FFFFFF",
-          borderTopWidth: 1,
-          borderTopColor: "#F3F4F6",
-          shadowColor: "#000000",
-          shadowOffset: {
-            width: 0,
-            height: -2,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 12,
+          height: 90,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -32,14 +27,25 @@ export default function TabLayout() {
         tabBarIconStyle: {
           marginBottom: 2,
         },
+        tabBarBackground: () => (
+          <BlurView
+            tint="light"
+            intensity={70}
+            style={StyleSheet.absoluteFillObject}
+          />
+        ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Search",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "search-sharp" : "search-outline"}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -50,16 +56,22 @@ export default function TabLayout() {
           headerShown: true,
           headerTitle: "My Trips",
           headerStyle: {
-            backgroundColor: "#db2777",
+            backgroundColor: Colors.background.light,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: Colors.border.light,
           },
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "bold",
-            color: "#FFFFFF",
+            color: Colors.primary,
           },
-          headerTintColor: "#FFFFFF",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" color={color} size={size} />
+          headerTintColor: Colors.primary,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "briefcase" : "briefcase-outline"}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -70,16 +82,22 @@ export default function TabLayout() {
           headerShown: true,
           headerTitle: "Profile",
           headerStyle: {
-            backgroundColor: "#db2777",
+            backgroundColor: Colors.background.light,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: Colors.border.light,
           },
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "bold",
-            color: "#FFFFFF",
+            color: Colors.primary,
           },
-          headerTintColor: "#FFFFFF",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" color={color} size={size} />
+          headerTintColor: Colors.primary,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person" : "person-outline"}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />

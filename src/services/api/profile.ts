@@ -72,10 +72,10 @@ class ProfileService {
         response.data?.message || "Failed to update notifications"
       );
     }
+    console.log({ response });
     return response.data;
   }
 
-  // Added privacy settings method
   async editPrivacySettings(
     userId: string,
     privacySettings: UserPrivacySettings
@@ -91,7 +91,6 @@ class ProfileService {
     return response.data;
   }
 
-  // Additional profile methods you might need
   async updateProfile(
     userId: string,
     profileData: {

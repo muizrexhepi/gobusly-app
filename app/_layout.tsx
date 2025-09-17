@@ -1,8 +1,13 @@
+// RootLayout.tsx
+
 import { useAuthStore } from "@/src/stores/authStore";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "../global.css";
+
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
@@ -12,7 +17,7 @@ export default function RootLayout() {
   }, [initialize]);
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
@@ -21,6 +26,6 @@ export default function RootLayout() {
         <Stack.Screen name="(modals)" options={{ presentation: "modal" }} />
       </Stack>
       <StatusBar style="auto" />
-    </>
+    </QueryClientProvider>
   );
 }

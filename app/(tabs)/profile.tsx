@@ -3,30 +3,22 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import React from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
+// The core logic remains the same, but the UI components are refactored
 export default function ProfileScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
 
   const handleLogin = () => router.push("/(modals)/login");
-
   const handleHelp = async () =>
     await WebBrowser.openBrowserAsync("https://support.gobusly.com");
-
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: logout,
-      },
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign Out", style: "destructive", onPress: logout },
     ]);
   };
-
   const handleClearLocalData = () => {
     if (isAuthenticated) {
       Alert.alert(
@@ -36,30 +28,23 @@ export default function ProfileScreen() {
       );
       return;
     }
-
     Alert.alert(
       "Clear Local Data",
       "This will remove all locally stored data including search history, preferences, and cached information. This action cannot be undone.",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Clear Data",
           style: "destructive",
           onPress: async () => {
             try {
-              // Clear AsyncStorage except auth data
               const keys = await AsyncStorage.getAllKeys();
               const nonAuthKeys = keys.filter(
                 (key) => !key.includes("auth") && !key.includes("token")
               );
-
               if (nonAuthKeys.length > 0) {
                 await AsyncStorage.multiRemove(nonAuthKeys);
               }
-
               Alert.alert(
                 "Data Cleared",
                 "Local data has been successfully cleared.",
@@ -77,17 +62,16 @@ export default function ProfileScreen() {
       ]
     );
   };
-
   const handlePrivacyPolicy = async () =>
     await WebBrowser.openBrowserAsync(
       "https://gobusly.com/legal/privacy-policy"
     );
-
   const handleTermsConditions = async () =>
     await WebBrowser.openBrowserAsync(
       "https://gobusly.com/legal/terms-of-service"
     );
 
+  // Reusable component for each list item
   const MenuItem = ({
     icon,
     title,
@@ -96,7 +80,7 @@ export default function ProfileScreen() {
     destructive = false,
     disabled = false,
   }: {
-    icon: React.ReactNode;
+    icon: React.ComponentProps<typeof Ionicons>["name"];
     title: string;
     subtitle?: string;
     onPress: () => void;
@@ -106,50 +90,66 @@ export default function ProfileScreen() {
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
-      className={`flex-row items-center justify-between p-4 bg-white border-b border-gray-100 ${
-        disabled ? "opacity-50" : ""
-      }`}
+      className={`flex-row items-center border-b border-gray-100 p-4 ${disabled ? "opacity-50" : ""}`}
     >
-      <View className="flex-row items-center">
-        <View
-          className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-            destructive ? "bg-red-50" : "bg-gray-50"
+      <View
+        className={`w-8 h-8 rounded-lg flex items-center justify-center mr-4 ${
+          destructive ? "bg-red-50" : "bg-gray-100"
+        }`}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={destructive ? "#EF4444" : "#4B5563"}
+        />
+      </View>
+      <View className="flex-1">
+        <Text
+          className={`text-base font-medium ${
+            destructive ? "text-red-500" : "text-gray-900"
           }`}
         >
-          {icon}
-        </View>
-        <View>
-          <Text
-            className={`text-base font-medium ${
-              destructive ? "text-red-500" : "text-gray-900"
-            }`}
-          >
-            {title}
-          </Text>
-          {subtitle && (
-            <Text className="text-sm text-gray-500">{subtitle}</Text>
-          )}
-        </View>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+        )}
       </View>
       <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
     </TouchableOpacity>
   );
 
+  // Reusable component to group menu items
+  const Section = ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) => (
+    <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
+      <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+        {title}
+      </Text>
+      {children}
+    </View>
+  );
+
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-gray-100">
       {/* Header */}
-      <View className="bg-white px-6 py-8">
+      <View className="px-6 py-8">
+        <Text className="text-3xl font-bold text-gray-900">
+          {isAuthenticated ? user?.name : "Profile"}
+        </Text>
         {isAuthenticated ? (
-          <>
-            <Text className="text-xl font-bold">{user?.name}</Text>
-            <Text className="text-gray-500 mt-1">{user?.email}</Text>
-          </>
+          <Text className="text-gray-500 mt-1">{user?.email}</Text>
         ) : (
           <TouchableOpacity
             onPress={handleLogin}
-            className="bg-pink-600 py-3 px-4 rounded-lg"
+            className="mt-4 bg-pink-600 py-3 px-4 rounded-full"
           >
-            <Text className="text-white text-center font-semibold">
+            <Text className="text-white text-center font-semibold text-base">
               Sign In / Create Account
             </Text>
           </TouchableOpacity>
@@ -157,140 +157,91 @@ export default function ProfileScreen() {
       </View>
 
       {isAuthenticated && (
-        <View className="mt-6">
-          <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
-            Account & Profile
-          </Text>
+        <Section title="Account & Profile">
           <MenuItem
-            icon={<Ionicons name="person-outline" size={18} color="#6B7280" />}
+            icon="person-outline"
             title="Personal Information"
-            subtitle="Manage your account details"
             onPress={() => router.push("/personal-info")}
           />
           <MenuItem
-            icon={<Ionicons name="time-outline" size={18} color="#6B7280" />}
+            icon="time-outline"
             title="Booking History"
-            subtitle="View your past and upcoming trips"
             onPress={() => router.push("/(tabs)/bookings")}
           />
           <MenuItem
-            icon={<Ionicons name="mail-outline" size={18} color="#6B7280" />}
+            icon="mail-outline"
             title="Inbox"
-            subtitle="Messages and updates"
             onPress={() => router.push("/inbox")}
           />
-        </View>
+        </Section>
       )}
 
-      {/* Settings & Preferences */}
-      <View className="mt-6">
-        <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
-          Settings & Preferences
-        </Text>
+      <Section title="Settings">
         <MenuItem
-          icon={
-            <Ionicons name="notifications-outline" size={18} color="#6B7280" />
-          }
+          icon="notifications-outline"
           title="Notifications"
-          subtitle={
-            isAuthenticated
-              ? "Manage your notification preferences"
-              : "Configure notifications"
-          }
           onPress={() => router.push("/notifications")}
         />
         <MenuItem
-          icon={<Ionicons name="globe-outline" size={18} color="#6B7280" />}
-          title="Language & Currency"
-          subtitle="Change display language and currency"
-          onPress={() => router.push("/language-currency")}
+          icon="globe-outline"
+          title="Langauge"
+          onPress={() => router.push("/language")}
         />
         <MenuItem
-          icon={
-            <Ionicons name="lock-closed-outline" size={18} color="#6B7280" />
-          }
+          icon="lock-closed-outline"
           title="Privacy Settings"
-          subtitle="Control your privacy and data sharing"
           onPress={() => router.push("/privacy-settings")}
         />
         <MenuItem
-          icon={<Ionicons name="trash-outline" size={18} color="#EF4444" />}
+          icon="trash-outline"
           title="Clear Local Data"
           subtitle={
-            isAuthenticated
-              ? "Data is synced to cloud"
-              : "Remove cached data and preferences"
+            isAuthenticated ? "Data is synced to cloud" : "Remove cached data"
           }
           destructive={!isAuthenticated}
           disabled={isAuthenticated}
           onPress={handleClearLocalData}
         />
-      </View>
+      </Section>
 
-      {/* Services */}
-      <View className="mt-6">
-        <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
-          Services
-        </Text>
+      <Section title="Support & Legal">
         <MenuItem
-          icon={
-            <Ionicons name="help-circle-outline" size={18} color="#6B7280" />
-          }
+          icon="help-circle-outline"
           title="Need Help?"
-          subtitle="Get support and contact us"
           onPress={handleHelp}
         />
         <MenuItem
-          icon={<Ionicons name="map-outline" size={18} color="#6B7280" />}
+          icon="map-outline"
           title="Station Locations"
-          subtitle="Find bus stations and stops"
           onPress={() => router.push("/station-locations")}
         />
-      </View>
-
-      {/* Legal & App Info */}
-      <View className="mt-6">
-        <Text className="px-6 py-2 text-gray-500 uppercase font-semibold text-sm">
-          Legal & Info
-        </Text>
         <MenuItem
-          icon={
-            <Ionicons name="document-text-outline" size={18} color="#6B7280" />
-          }
+          icon="document-text-outline"
           title="Terms & Conditions"
-          subtitle="Read our terms of service"
           onPress={handleTermsConditions}
         />
         <MenuItem
-          icon={
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={18}
-              color="#6B7280"
-            />
-          }
+          icon="shield-checkmark-outline"
           title="Privacy Policy"
-          subtitle="Learn how we protect your data"
           onPress={handlePrivacyPolicy}
         />
-      </View>
+      </Section>
 
-      {/* Sign Out */}
       {isAuthenticated && (
-        <View className="mt-6 mb-6">
+        <View className="mx-4 mt-2 mb-6 rounded-xl overflow-hidden">
           <MenuItem
-            icon={<Ionicons name="log-out-outline" size={18} color="#EF4444" />}
+            icon="log-out-outline"
             title="Sign Out"
-            subtitle="Sign out of your account"
             destructive
             onPress={handleSignOut}
           />
         </View>
       )}
 
-      <View className="px-6 py-4">
+      {/* Version Info */}
+      <View className="px-6 pb-32 flex-col items-center justify-center">
         <Text className="text-gray-400 text-sm">Version 1.0.0</Text>
-        <Text className="text-gray-400 text-xs mt-1">
+        <Text className="text-gray-400 text-xs mt-1 text-center">
           {isAuthenticated
             ? `Signed in as ${user?.email}`
             : "Using app in guest mode"}

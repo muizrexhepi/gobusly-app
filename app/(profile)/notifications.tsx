@@ -3,19 +3,11 @@
 import { profileService } from "@/src/services/api/profile";
 import { useAuthStore } from "@/src/stores/authStore";
 import { UserNotifications } from "@/src/types/auth";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Stack, useRouter } from "expo-router";
-import {
-  CheckCircle,
-  ChevronLeft,
-  Clock,
-  Settings,
-  Shield,
-  Tag,
-} from "lucide-react-native";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   Switch,
@@ -26,12 +18,73 @@ import {
 
 const GUEST_NOTIFICATIONS_KEY = "guest_notification_preferences";
 
+// Reusable component for each list item
+const MenuItem = ({
+  icon,
+  title,
+  subtitle,
+  onPress,
+  isSwitch = false,
+  value = false,
+  disabled = false,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  title: string;
+  subtitle?: string;
+  onPress: () => void;
+  isSwitch?: boolean;
+  value?: boolean;
+  disabled?: boolean;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    disabled={disabled}
+    className={`flex-row border-b border-gray-100 items-center p-4 ${disabled ? "opacity-50" : ""}`}
+  >
+    <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
+      <Ionicons name={icon} size={18} color="#4B5563" />
+    </View>
+    <View className="flex-1">
+      <Text className="text-base font-medium text-gray-900">{title}</Text>
+      {subtitle && (
+        <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+      )}
+    </View>
+    {isSwitch ? (
+      <Switch
+        value={value}
+        onValueChange={onPress}
+        trackColor={{ true: "#15203e", false: "#e5e7eb" }}
+        thumbColor="#fff"
+        disabled={disabled}
+      />
+    ) : (
+      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+    )}
+  </TouchableOpacity>
+);
+
+// Reusable component to group menu items
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
+    <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+      {title}
+    </Text>
+    {children}
+  </View>
+);
+
 interface NotificationItem {
   key: keyof UserNotifications;
   label: string;
   description: string;
-  icon: React.ComponentType<any>;
-  iconColor: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
 }
 
 const notificationItems: NotificationItem[] = [
@@ -39,36 +92,31 @@ const notificationItems: NotificationItem[] = [
     key: "booking_confirmations",
     label: "Booking Confirmations",
     description: "Get notified when your bookings are confirmed or updated",
-    icon: CheckCircle,
-    iconColor: "#10b981",
+    icon: "checkmark-circle-outline",
   },
   {
     key: "departure_reminders",
     label: "Departure Reminders",
     description: "Receive reminders before your scheduled departures",
-    icon: Clock,
-    iconColor: "#f59e0b",
+    icon: "alarm-outline",
   },
   {
     key: "promotions",
     label: "Promotions & Offers",
     description: "Stay updated with special deals and promotional offers",
-    icon: Tag,
-    iconColor: "#ef4444",
+    icon: "pricetag-outline",
   },
   {
     key: "account_updates",
     label: "Account Updates",
     description: "Important updates about your account and profile changes",
-    icon: Settings,
-    iconColor: "#6366f1",
+    icon: "settings-outline",
   },
   {
     key: "security_alerts",
     label: "Security Alerts",
     description: "Critical security notifications and login alerts",
-    icon: Shield,
-    iconColor: "#dc2626",
+    icon: "shield-checkmark-outline",
   },
 ];
 
@@ -87,7 +135,6 @@ export default function NotificationsScreen() {
   const [guestNotifications, setGuestNotifications] =
     useState<UserNotifications>(defaultNotifications);
 
-  // Load guest notifications from AsyncStorage
   useEffect(() => {
     if (!isAuthenticated) {
       loadGuestNotifications();
@@ -118,7 +165,6 @@ export default function NotificationsScreen() {
     }
   };
 
-  // Get current notifications based on user state
   const getCurrentNotifications = (): UserNotifications => {
     return isAuthenticated
       ? user?.notifications || defaultNotifications
@@ -136,11 +182,9 @@ export default function NotificationsScreen() {
       };
 
       if (isAuthenticated && user) {
-        // Save to backend for authenticated users
         await profileService.editNotifications(user._id, updatedNotifications);
         updateUser({ notifications: updatedNotifications });
       } else {
-        // Save to AsyncStorage for guest users
         await saveGuestNotifications(updatedNotifications);
       }
     } catch (error: any) {
@@ -155,12 +199,9 @@ export default function NotificationsScreen() {
 
     try {
       const currentNotifications = getCurrentNotifications();
-      // Check if any notification is currently enabled
       const isAnyEnabled = Object.values(currentNotifications).some(
         (value) => value === true
       );
-
-      // Toggle all notifications to the opposite state
       const newState = !isAnyEnabled;
 
       const updatedNotifications: UserNotifications = {
@@ -172,11 +213,9 @@ export default function NotificationsScreen() {
       };
 
       if (isAuthenticated && user) {
-        // Save to backend for authenticated users
         await profileService.editNotifications(user._id, updatedNotifications);
         updateUser({ notifications: updatedNotifications });
       } else {
-        // Save to AsyncStorage for guest users
         await saveGuestNotifications(updatedNotifications);
       }
     } catch (error: any) {
@@ -186,58 +225,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const backButton = () => (
-    <TouchableOpacity onPress={() => router.back()} className="p-2">
-      <ChevronLeft color="#fff" size={24} />
-    </TouchableOpacity>
-  );
-
-  const NotificationSwitch = ({
-    item,
-    value,
-    onChange,
-  }: {
-    item: NotificationItem;
-    value: boolean;
-    onChange: () => void;
-  }) => {
-    const IconComponent = item.icon;
-
-    return (
-      <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center flex-1">
-            <View className="w-12 h-12 rounded-full bg-gray-50 items-center justify-center mr-4">
-              <IconComponent color={item.iconColor} size={24} />
-            </View>
-            <View className="flex-1 pr-4">
-              <Text className="text-lg font-semibold text-gray-900 mb-1">
-                {item.label}
-              </Text>
-              <Text className="text-sm text-gray-600 leading-5">
-                {item.description}
-              </Text>
-            </View>
-          </View>
-          {isLoading ? (
-            <ActivityIndicator color="#db2777" size="small" />
-          ) : (
-            <Switch
-              value={value}
-              onValueChange={onChange}
-              trackColor={{ true: "#db2777", false: "#e5e7eb" }}
-              thumbColor="#fff"
-              disabled={isLoading}
-            />
-          )}
-        </View>
-      </View>
-    );
-  };
-
   const currentNotifications = getCurrentNotifications();
-
-  // Check if all notifications are enabled
   const allEnabled = Object.values(currentNotifications).every(
     (value) => value === true
   );
@@ -246,83 +234,58 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerTitle: "Notifications",
-          headerStyle: { backgroundColor: "#db2777" },
-          headerTitleStyle: { fontSize: 20, fontWeight: "bold", color: "#fff" },
-          headerTintColor: "#fff",
-          headerLeft: backButton,
-        }}
-      />
-
-      <ScrollView className="bg-gray-50 flex-1">
-        <View className="px-6 py-6">
-          {!isAuthenticated && (
-            <View className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
-              <Text className="text-blue-900 font-medium mb-1">Guest Mode</Text>
-              <Text className="text-blue-800 text-sm leading-5">
-                Your notification preferences are saved locally. Sign in to sync
-                across devices and receive personalized updates.
-              </Text>
-            </View>
-          )}
-
-          {/* Master Toggle */}
-          <View className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-lg font-semibold text-gray-900 mb-1">
-                  All Notifications
-                </Text>
-                <Text className="text-sm text-gray-600">
-                  {allEnabled
-                    ? "Disable all notifications"
-                    : anyEnabled
-                      ? "Enable remaining notifications"
-                      : "Enable all notifications"}
-                </Text>
-              </View>
-              {isLoading ? (
-                <ActivityIndicator color="#db2777" size="small" />
-              ) : (
-                <Switch
-                  value={anyEnabled}
-                  onValueChange={handleToggleAll}
-                  trackColor={{ true: "#db2777", false: "#e5e7eb" }}
-                  thumbColor="#fff"
-                  disabled={isLoading}
-                />
-              )}
-            </View>
-          </View>
-
-          {/* Individual Notification Settings */}
-          <View>
-            <Text className="text-lg font-semibold text-gray-900 mb-4">
-              Individual Settings
-            </Text>
-            {notificationItems.map((item) => (
-              <NotificationSwitch
-                key={item.key}
-                item={item}
-                value={currentNotifications[item.key]}
-                onChange={() => handleToggle(item.key)}
-              />
-            ))}
-          </View>
-
-          {/* Footer Info */}
-          <View className="mt-6 p-4 bg-blue-50 rounded-xl">
-            <Text className="text-sm text-blue-700 text-center">
-              {isAuthenticated
-                ? "You can change these settings anytime. Critical security alerts will always be sent for account protection."
-                : "These preferences will be applied when you receive push notifications. Sign in to sync your settings across devices."}
-            </Text>
-          </View>
+    <ScrollView className="flex-1 bg-gray-100 py-4">
+      {/* Guest Mode Info */}
+      {!isAuthenticated && (
+        <View className="mx-4 mb-6 rounded-xl overflow-hidden bg-white p-4">
+          <Text className="text-sm font-semibold text-blue-900 mb-1">
+            Guest Mode
+          </Text>
+          <Text className="text-xs text-blue-800 leading-5">
+            Your notification preferences are saved locally. Sign in to sync
+            across devices and receive personalized updates.
+          </Text>
         </View>
-      </ScrollView>
-    </>
+      )}
+
+      {/* Main Notification Settings */}
+      <Section title="Notification Controls">
+        <MenuItem
+          icon="notifications-outline"
+          title="All Notifications"
+          subtitle={
+            allEnabled
+              ? "Disable all notifications"
+              : anyEnabled
+                ? "Enable remaining notifications"
+                : "Enable all notifications"
+          }
+          onPress={handleToggleAll}
+          isSwitch
+          value={anyEnabled}
+          disabled={isLoading}
+        />
+        {notificationItems.map((item) => (
+          <MenuItem
+            key={item.key}
+            icon={item.icon}
+            title={item.label}
+            subtitle={item.description}
+            onPress={() => handleToggle(item.key)}
+            isSwitch
+            value={currentNotifications[item.key]}
+            disabled={isLoading}
+          />
+        ))}
+      </Section>
+
+      {/* Footer Info */}
+      <View className="mx-4 mt-2 mb-6 p-4 bg-gray-200 rounded-xl">
+        <Text className="text-xs text-gray-600 text-center leading-5">
+          You can change these settings anytime. Critical security alerts will
+          always be sent for account protection.
+        </Text>
+      </View>
+    </ScrollView>
   );
 }

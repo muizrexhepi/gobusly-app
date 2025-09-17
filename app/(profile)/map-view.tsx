@@ -265,7 +265,7 @@ export default function MapViewScreen() {
   );
 
   const getMarkerColor = (station: BusStation) => {
-    return station.isMainStation ? "#db2777" : "#ef4444";
+    return station.isMainStation ? "#15203e" : "#ef4444";
   };
 
   const SearchOverlay = () =>
@@ -349,7 +349,7 @@ export default function MapViewScreen() {
 
       <View className="flex-row justify-between mt-2">
         <TouchableOpacity
-          onPress={() => router.push(`/station/${station.id}`)}
+          // onPress={() => router.push(`/station/${station.id}`)}
           className="bg-gray-100 px-3 py-2 rounded-lg flex-1 mr-2"
         >
           <Text className="text-center text-sm font-medium text-gray-700">
@@ -374,7 +374,7 @@ export default function MapViewScreen() {
       <Stack.Screen
         options={{
           headerTitle: "Station Map",
-          headerStyle: { backgroundColor: "#db2777" },
+          headerStyle: { backgroundColor: "#15203e" },
           headerTitleStyle: { fontSize: 20, fontWeight: "bold", color: "#fff" },
           headerTintColor: "#fff",
           headerLeft: backButton,
@@ -450,7 +450,7 @@ export default function MapViewScreen() {
             onPress={() => setShowSearch(true)}
             className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg border border-gray-200"
           >
-            <Search color="#db2777" size={24} />
+            <Search color="#15203e" size={24} />
           </TouchableOpacity>
 
           {/* My Location Button */}
@@ -460,9 +460,9 @@ export default function MapViewScreen() {
             className="w-14 h-14 bg-white rounded-full items-center justify-center shadow-lg border border-gray-200"
           >
             {isLoadingLocation ? (
-              <ActivityIndicator color="#db2777" size="small" />
+              <ActivityIndicator color="#15203e" size="small" />
             ) : (
-              <Locate color="#db2777" size={24} />
+              <Locate color="#15203e" size={24} />
             )}
           </TouchableOpacity>
         </View>
@@ -531,7 +531,7 @@ export default function MapViewScreen() {
                 )}
 
                 <TouchableOpacity
-                  onPress={() => router.push(`/station/${selectedStation.id}`)}
+                  // onPress={() => router.push(`/station/${selectedStation.id}`)}
                   className="flex-1 bg-gray-600 py-3 rounded-xl flex-row items-center justify-center"
                 >
                   <Text className="text-white font-semibold">Details</Text>
