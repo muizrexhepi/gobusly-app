@@ -15,7 +15,9 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "gobuslyapp",
-            "CFBundleURLSchemes": ["gobuslyapp"]
+            "CFBundleURLSchemes": [
+              "gobuslyapp"
+            ]
           }
         ],
         "ITSAppUsesNonExemptEncryption": false
@@ -34,7 +36,10 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "category": ["DEFAULT", "BROWSABLE"],
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
           "data": {
             "scheme": "gobuslyapp"
           }
@@ -71,7 +76,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow GoBusly to use your location to find nearby bus stations."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

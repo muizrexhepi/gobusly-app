@@ -59,20 +59,43 @@ class ProfileService {
 
   async editNotifications(
     userId: string,
-    notifications: Partial<UserNotificationsDTO>
+    notificationKey: keyof UserNotifications,
+    value: boolean
   ): Promise<ProfileUpdateResponse> {
     const response = await apiClient.post(
       `/auth/notifications/update/${userId}`,
       {
-        notifications,
+        notification_key: notificationKey,
+        [notificationKey]: value,
       }
     );
-    if (!response.data?._id) {
+
+    console.log("editNotifications response:", response.data);
+
+    // Check if it's a success response (even if it doesn't have _id)
+    if (
+      response.data?.message?.includes("successfully") ||
+      response.status === 200
+    ) {
+      // Return a valid response structure for successful updates
+      return {
+        _id: userId,
+        message: response.data?.message || "Notification updated successfully",
+        notifications: response.data?.notifications || undefined,
+        ...response.data,
+      };
+    }
+
+    // Only throw error if it's actually an error response
+    if (
+      !response.data?._id &&
+      !response.data?.message?.includes("successfully")
+    ) {
       throw new Error(
         response.data?.message || "Failed to update notifications"
       );
     }
-    console.log({ response });
+
     return response.data;
   }
 

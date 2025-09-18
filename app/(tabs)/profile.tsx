@@ -4,37 +4,48 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-// The core logic remains the same, but the UI components are refactored
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, logout } = useAuthStore();
 
   const handleLogin = () => router.push("/(modals)/login");
   const handleHelp = async () =>
     await WebBrowser.openBrowserAsync("https://support.gobusly.com");
+
   const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: logout },
-    ]);
+    Alert.alert(
+      t("profileTab.signOutConfirmTitle"),
+      t("profileTab.signOutConfirmMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("profileTab.signOut"),
+          style: "destructive",
+          onPress: logout,
+        },
+      ]
+    );
   };
+
   const handleClearLocalData = () => {
     if (isAuthenticated) {
       Alert.alert(
-        "Data is Cloud Synced",
-        "Your data is safely stored in the cloud and synced across devices. Local data clearing is not available for authenticated users.",
-        [{ text: "OK" }]
+        t("profileTab.dataSyncedTitle"),
+        t("profileTab.dataSyncedMessage"),
+        [{ text: t("profileTab.ok") }]
       );
       return;
     }
     Alert.alert(
-      "Clear Local Data",
-      "This will remove all locally stored data including search history, preferences, and cached information. This action cannot be undone.",
+      t("profileTab.clearDataTitle"),
+      t("profileTab.clearDataMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Clear Data",
+          text: t("profileTab.clearData"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -46,30 +57,40 @@ export default function ProfileScreen() {
                 await AsyncStorage.multiRemove(nonAuthKeys);
               }
               Alert.alert(
-                "Data Cleared",
-                "Local data has been successfully cleared.",
-                [{ text: "OK" }]
+                t("profileTab.dataCleared"),
+                t("profileTab.dataClearedMessage"),
+                [{ text: t("profileTab.ok") }]
               );
             } catch (error) {
-              Alert.alert(
-                "Error",
-                "Failed to clear local data. Please try again.",
-                [{ text: "OK" }]
-              );
+              Alert.alert(t("common.error"), t("profileTab.clearDataError"), [
+                { text: t("profileTab.ok") },
+              ]);
             }
           },
         },
       ]
     );
   };
+
   const handlePrivacyPolicy = async () =>
     await WebBrowser.openBrowserAsync(
       "https://gobusly.com/legal/privacy-policy"
     );
+
   const handleTermsConditions = async () =>
     await WebBrowser.openBrowserAsync(
       "https://gobusly.com/legal/terms-of-service"
     );
+
+  // Generate initials from name for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   // Reusable component for each list item
   const MenuItem = ({
@@ -79,6 +100,7 @@ export default function ProfileScreen() {
     onPress,
     destructive = false,
     disabled = false,
+    isLastItem = false,
   }: {
     icon: React.ComponentProps<typeof Ionicons>["name"];
     title: string;
@@ -86,11 +108,15 @@ export default function ProfileScreen() {
     onPress: () => void;
     destructive?: boolean;
     disabled?: boolean;
+    isLastItem?: boolean;
   }) => (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
-      className={`flex-row items-center border-b border-gray-100 p-4 ${disabled ? "opacity-50" : ""}`}
+      className={`flex-row items-center p-4 ${disabled ? "opacity-50" : ""} ${
+        !isLastItem ? "border-b border-gray-100" : ""
+      }`}
+      activeOpacity={0.7}
     >
       <View
         className={`w-8 h-8 rounded-lg flex items-center justify-center mr-4 ${
@@ -119,132 +145,138 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
-  // Reusable component to group menu items
-  const Section = ({
-    title,
-    children,
-  }: {
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
-      <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-        {title}
-      </Text>
+  const Section = ({ children }: { children: React.ReactNode }) => (
+    <View className="mb-6 rounded-2xl overflow-hidden bg-white mx-4">
       {children}
     </View>
   );
 
   return (
-    <ScrollView className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View className="px-6 py-8">
-        <Text className="text-3xl font-bold text-gray-900">
-          {isAuthenticated ? user?.name : "Profile"}
-        </Text>
+    <ScrollView className="flex-1 bg-gray-100 py-4">
+      {/* Apple-style Header */}
+      <Section>
         {isAuthenticated ? (
-          <Text className="text-gray-500 mt-1">{user?.email}</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/personal-info")}
+            className="flex-row items-center p-4"
+            activeOpacity={0.7}
+          >
+            {/* Avatar */}
+            <View className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center mr-4">
+              <Text className="text-white text-xl font-semibold">
+                {getInitials(user?.name || "U")}
+              </Text>
+            </View>
+
+            {/* User Info */}
+            <View className="flex-1">
+              <Text className="text-xl font-semibold text-gray-900">
+                {user?.name || "User"}
+              </Text>
+              <Text className="text-sm text-gray-500 mt-1">{user?.email}</Text>
+              <Text className="text-sm text-blue-500 mt-1">
+                {t("profileTab.personalInformation")}
+              </Text>
+            </View>
+
+            {/* Chevron */}
+            <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity
             onPress={handleLogin}
-            className="mt-4 bg-pink-600 py-3 px-4 rounded-full"
+            className="bg-primary py-3 px-4 rounded-2xl mt-2"
           >
             <Text className="text-white text-center font-semibold text-base">
-              Sign In / Create Account
+              {t("profileTab.signInCreateAccount")}
             </Text>
           </TouchableOpacity>
         )}
-      </View>
+      </Section>
 
-      {isAuthenticated && (
-        <Section title="Account & Profile">
-          <MenuItem
-            icon="person-outline"
-            title="Personal Information"
-            onPress={() => router.push("/personal-info")}
-          />
-          <MenuItem
-            icon="time-outline"
-            title="Booking History"
-            onPress={() => router.push("/(tabs)/bookings")}
-          />
-          <MenuItem
-            icon="mail-outline"
-            title="Inbox"
-            onPress={() => router.push("/inbox")}
-          />
-        </Section>
-      )}
-
-      <Section title="Settings">
+      <Section>
         <MenuItem
           icon="notifications-outline"
-          title="Notifications"
+          title={t("profileTab.notifications")}
           onPress={() => router.push("/notifications")}
         />
         <MenuItem
           icon="globe-outline"
-          title="Langauge"
+          title={t("profileTab.language")}
           onPress={() => router.push("/language")}
         />
         <MenuItem
           icon="lock-closed-outline"
-          title="Privacy Settings"
+          title={t("profileTab.privacySettings")}
           onPress={() => router.push("/privacy-settings")}
         />
+        {isAuthenticated && (
+          <MenuItem
+            icon="mail-outline"
+            title={t("profileTab.inbox")}
+            onPress={() => router.push("/inbox")}
+          />
+        )}
         <MenuItem
           icon="trash-outline"
-          title="Clear Local Data"
+          title={t("profileTab.clearLocalData")}
           subtitle={
-            isAuthenticated ? "Data is synced to cloud" : "Remove cached data"
+            isAuthenticated
+              ? t("profileTab.dataSyncedToCloud")
+              : t("profileTab.removeCachedData")
           }
           destructive={!isAuthenticated}
           disabled={isAuthenticated}
           onPress={handleClearLocalData}
+          isLastItem={!isAuthenticated}
         />
       </Section>
 
-      <Section title="Support & Legal">
+      {/* Support & Legal Section */}
+      <Section>
         <MenuItem
           icon="help-circle-outline"
-          title="Need Help?"
+          title={t("profileTab.needHelp")}
           onPress={handleHelp}
         />
         <MenuItem
           icon="map-outline"
-          title="Station Locations"
+          title={t("profileTab.stationLocations")}
           onPress={() => router.push("/station-locations")}
         />
         <MenuItem
           icon="document-text-outline"
-          title="Terms & Conditions"
+          title={t("profileTab.termsConditions")}
           onPress={handleTermsConditions}
         />
         <MenuItem
           icon="shield-checkmark-outline"
-          title="Privacy Policy"
+          title={t("profileTab.privacyPolicy")}
           onPress={handlePrivacyPolicy}
+          isLastItem
         />
       </Section>
 
+      {/* Sign Out Button (for authenticated users only) */}
       {isAuthenticated && (
-        <View className="mx-4 mt-2 mb-6 rounded-xl overflow-hidden">
+        <Section>
           <MenuItem
             icon="log-out-outline"
-            title="Sign Out"
+            title={t("profileTab.signOut")}
             destructive
             onPress={handleSignOut}
+            isLastItem
           />
-        </View>
+        </Section>
       )}
 
       {/* Version Info */}
       <View className="px-6 pb-32 flex-col items-center justify-center">
-        <Text className="text-gray-400 text-sm">Version 1.0.0</Text>
+        <Text className="text-gray-400 text-sm">{t("profileTab.version")}</Text>
         <Text className="text-gray-400 text-xs mt-1 text-center">
           {isAuthenticated
-            ? `Signed in as ${user?.email}`
-            : "Using app in guest mode"}
+            ? t("profileTab.signedInAs", { email: user?.email })
+            : t("profileTab.guestMode")}
         </Text>
       </View>
     </ScrollView>

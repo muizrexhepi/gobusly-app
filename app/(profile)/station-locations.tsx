@@ -52,7 +52,7 @@ const Section = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
+  <View className="mb-6 rounded-2xl overflow-hidden bg-white mx-4">
     {title && (
       <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
         {title}

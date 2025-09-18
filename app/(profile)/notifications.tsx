@@ -1,14 +1,14 @@
-"use client";
-
 import { profileService } from "@/src/services/api/profile";
 import { useAuthStore } from "@/src/stores/authStore";
 import { UserNotifications } from "@/src/types/auth";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Alert,
+  Linking,
   ScrollView,
   Switch,
   Text,
@@ -18,7 +18,6 @@ import {
 
 const GUEST_NOTIFICATIONS_KEY = "guest_notification_preferences";
 
-// Reusable component for each list item
 const MenuItem = ({
   icon,
   title,
@@ -27,6 +26,8 @@ const MenuItem = ({
   isSwitch = false,
   value = false,
   disabled = false,
+  isLoading = false,
+  isLastItem = false,
 }: {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   title: string;
@@ -35,90 +36,71 @@ const MenuItem = ({
   isSwitch?: boolean;
   value?: boolean;
   disabled?: boolean;
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    disabled={disabled}
-    className={`flex-row border-b border-gray-100 items-center p-4 ${disabled ? "opacity-50" : ""}`}
-  >
-    <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
-      <Ionicons name={icon} size={18} color="#4B5563" />
-    </View>
-    <View className="flex-1">
-      <Text className="text-base font-medium text-gray-900">{title}</Text>
-      {subtitle && (
-        <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
-      )}
-    </View>
-    {isSwitch ? (
-      <Switch
-        value={value}
-        onValueChange={onPress}
-        trackColor={{ true: "#15203e", false: "#e5e7eb" }}
-        thumbColor="#fff"
-        disabled={disabled}
-      />
-    ) : (
-      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-    )}
-  </TouchableOpacity>
-);
+  isLoading?: boolean;
+  isLastItem?: boolean;
+}) => {
+  if (isSwitch) {
+    return (
+      <View
+        className={`flex-row items-center p-4 ${disabled || isLoading ? "opacity-60" : ""} ${
+          !isLastItem ? "border-b border-gray-100" : ""
+        }`}
+      >
+        <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
+          <Ionicons name={icon} size={18} color="#4B5563" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-base font-medium text-gray-900">{title}</Text>
+          {subtitle && (
+            <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+          )}
+        </View>
+        <View className="w-fit items-end">
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#15203e" />
+          ) : (
+            <Switch
+              value={value}
+              onValueChange={onPress}
+              trackColor={{ true: "#15203e", false: "#e5e7eb" }}
+              thumbColor="#fff"
+              disabled={disabled}
+            />
+          )}
+        </View>
+      </View>
+    );
+  }
 
-// Reusable component to group menu items
-const Section = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) => (
-  <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
-    <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-      {title}
-    </Text>
+  // For non-switch items (like "Manage Device Notifications"), the whole row is touchable
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled || isLoading}
+      className={`flex-row items-center p-4 ${disabled || isLoading ? "opacity-60" : ""} ${
+        !isLastItem ? "border-b border-gray-100" : ""
+      }`}
+      activeOpacity={0.7}
+    >
+      <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
+        <Ionicons name={icon} size={18} color="#4B5563" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-base font-medium text-gray-900">{title}</Text>
+        {subtitle && (
+          <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+    </TouchableOpacity>
+  );
+};
+
+const Section = ({ children }: { children: React.ReactNode }) => (
+  <View className="mb-6 rounded-2xl overflow-hidden bg-white mx-4">
     {children}
   </View>
 );
-
-interface NotificationItem {
-  key: keyof UserNotifications;
-  label: string;
-  description: string;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-}
-
-const notificationItems: NotificationItem[] = [
-  {
-    key: "booking_confirmations",
-    label: "Booking Confirmations",
-    description: "Get notified when your bookings are confirmed or updated",
-    icon: "checkmark-circle-outline",
-  },
-  {
-    key: "departure_reminders",
-    label: "Departure Reminders",
-    description: "Receive reminders before your scheduled departures",
-    icon: "alarm-outline",
-  },
-  {
-    key: "promotions",
-    label: "Promotions & Offers",
-    description: "Stay updated with special deals and promotional offers",
-    icon: "pricetag-outline",
-  },
-  {
-    key: "account_updates",
-    label: "Account Updates",
-    description: "Important updates about your account and profile changes",
-    icon: "settings-outline",
-  },
-  {
-    key: "security_alerts",
-    label: "Security Alerts",
-    description: "Critical security notifications and login alerts",
-    icon: "shield-checkmark-outline",
-  },
-];
 
 const defaultNotifications: UserNotifications = {
   booking_confirmations: true,
@@ -128,25 +110,38 @@ const defaultNotifications: UserNotifications = {
   security_alerts: true,
 };
 
+// Icon mapping for notification types
+const getNotificationIcon = (
+  key: string
+): React.ComponentProps<typeof Ionicons>["name"] => {
+  const iconMap: Record<string, React.ComponentProps<typeof Ionicons>["name"]> =
+    {
+      booking_confirmations: "checkmark-circle-outline",
+      departure_reminders: "alarm-outline",
+      promotions: "pricetag-outline",
+      account_updates: "settings-outline",
+      security_alerts: "shield-checkmark-outline",
+    };
+  return iconMap[key] || "notifications-outline";
+};
+
 export default function NotificationsScreen() {
-  const router = useRouter();
+  const { t } = useTranslation();
   const { user, updateUser, isAuthenticated } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [guestNotifications, setGuestNotifications] =
     useState<UserNotifications>(defaultNotifications);
 
+  console.log({ user });
+
   useEffect(() => {
-    if (!isAuthenticated) {
-      loadGuestNotifications();
-    }
+    if (!isAuthenticated) loadGuestNotifications();
   }, [isAuthenticated]);
 
   const loadGuestNotifications = async () => {
     try {
       const saved = await AsyncStorage.getItem(GUEST_NOTIFICATIONS_KEY);
-      if (saved) {
-        setGuestNotifications(JSON.parse(saved));
-      }
+      if (saved) setGuestNotifications(JSON.parse(saved));
     } catch (error) {
       console.error("Failed to load guest notification preferences:", error);
     }
@@ -161,7 +156,6 @@ export default function NotificationsScreen() {
       setGuestNotifications(notifications);
     } catch (error) {
       console.error("Failed to save guest notification preferences:", error);
-      Alert.alert("Error", "Failed to save notification preferences");
     }
   };
 
@@ -172,118 +166,151 @@ export default function NotificationsScreen() {
   };
 
   const handleToggle = async (key: keyof UserNotifications) => {
-    setIsLoading(true);
+    // Prevent multiple simultaneous updates
+    if (loadingKey) return;
+
+    setLoadingKey(key);
 
     try {
       const currentNotifications = getCurrentNotifications();
-      const updatedNotifications: UserNotifications = {
-        ...currentNotifications,
-        [key]: !currentNotifications[key],
-      };
+      const newValue = !currentNotifications[key];
 
-      if (isAuthenticated && user) {
-        await profileService.editNotifications(user._id, updatedNotifications);
+      console.log(
+        `Toggling ${key} from ${currentNotifications[key]} to ${newValue}`
+      );
+
+      if (isAuthenticated && user?._id) {
+        // Optimistic update - update UI immediately for better UX
+        const updatedNotifications = {
+          ...currentNotifications,
+          [key]: newValue,
+        };
         updateUser({ notifications: updatedNotifications });
+
+        try {
+          // Call API to sync with backend
+          const response = await profileService.editNotifications(
+            user._id,
+            key,
+            newValue
+          );
+          console.log("API response:", response);
+
+          // If the API returns updated notifications, use those
+          if (response.notifications) {
+            updateUser({ notifications: response.notifications });
+          }
+        } catch (apiError: any) {
+          console.error(`API call failed for ${key}:`, apiError);
+
+          // Revert optimistic update on API failure
+          updateUser({ notifications: currentNotifications });
+
+          // Only show error if it's not a success message being treated as error
+          if (!apiError.message?.includes("successfully")) {
+            throw apiError;
+          }
+        }
       } else {
+        // For guest mode
+        const updatedNotifications: UserNotifications = {
+          ...currentNotifications,
+          [key]: newValue,
+        };
         await saveGuestNotifications(updatedNotifications);
       }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to update notifications");
+      console.error(`Failed to update ${key}:`, error);
+
+      Alert.alert(
+        t("notificationsScreen.updateErrorTitle", "Update Failed"),
+        error.message ||
+          t(
+            "notificationsScreen.updateErrorMessage",
+            "Failed to update notification settings. Please try again."
+          )
+      );
     } finally {
-      setIsLoading(false);
+      setLoadingKey(null);
     }
   };
 
-  const handleToggleAll = async () => {
-    setIsLoading(true);
-
-    try {
-      const currentNotifications = getCurrentNotifications();
-      const isAnyEnabled = Object.values(currentNotifications).some(
-        (value) => value === true
+  const openAppSettings = () => {
+    Linking.openSettings().catch(() => {
+      Alert.alert(
+        "Unable to Open Settings",
+        "Please manually open your device settings to manage notifications for this app."
       );
-      const newState = !isAnyEnabled;
-
-      const updatedNotifications: UserNotifications = {
-        booking_confirmations: newState,
-        departure_reminders: newState,
-        promotions: newState,
-        account_updates: newState,
-        security_alerts: newState,
-      };
-
-      if (isAuthenticated && user) {
-        await profileService.editNotifications(user._id, updatedNotifications);
-        updateUser({ notifications: updatedNotifications });
-      } else {
-        await saveGuestNotifications(updatedNotifications);
-      }
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to update notifications");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const currentNotifications = getCurrentNotifications();
-  const allEnabled = Object.values(currentNotifications).every(
-    (value) => value === true
-  );
-  const anyEnabled = Object.values(currentNotifications).some(
-    (value) => value === true
-  );
+
+  const notificationKeys = Object.keys(currentNotifications).filter(
+    (key) =>
+      key !== "sms" &&
+      typeof currentNotifications[key as keyof UserNotifications] === "boolean"
+  ) as (keyof UserNotifications)[];
 
   return (
     <ScrollView className="flex-1 bg-gray-100 py-4">
-      {/* Guest Mode Info */}
       {!isAuthenticated && (
-        <View className="mx-4 mb-6 rounded-xl overflow-hidden bg-white p-4">
+        <View className="mx-4 mb-6 rounded-2xl overflow-hidden bg-white p-4">
           <Text className="text-sm font-semibold text-blue-900 mb-1">
-            Guest Mode
+            {t("notificationsScreen.guestModeTitle", "Guest Mode")}
           </Text>
           <Text className="text-xs text-blue-800 leading-5">
-            Your notification preferences are saved locally. Sign in to sync
-            across devices and receive personalized updates.
+            {t(
+              "notificationsScreen.guestModeMessage",
+              "Your notification preferences are saved locally. Sign in to sync across devices and receive personalized updates."
+            )}
           </Text>
         </View>
       )}
 
-      {/* Main Notification Settings */}
-      <Section title="Notification Controls">
+      <Section>
         <MenuItem
-          icon="notifications-outline"
-          title="All Notifications"
-          subtitle={
-            allEnabled
-              ? "Disable all notifications"
-              : anyEnabled
-                ? "Enable remaining notifications"
-                : "Enable all notifications"
-          }
-          onPress={handleToggleAll}
-          isSwitch
-          value={anyEnabled}
-          disabled={isLoading}
+          icon="phone-portrait-outline"
+          title={t(
+            "notificationsScreen.manageDeviceNotifications",
+            "Manage Device Notifications"
+          )}
+          subtitle={t(
+            "notificationsScreen.manageDeviceNotificationsSubtitle",
+            "Open device settings to enable or disable all push notifications for this app"
+          )}
+          onPress={openAppSettings}
         />
-        {notificationItems.map((item) => (
+      </Section>
+
+      <Section>
+        {notificationKeys.map((key, index) => (
           <MenuItem
-            key={item.key}
-            icon={item.icon}
-            title={item.label}
-            subtitle={item.description}
-            onPress={() => handleToggle(item.key)}
+            key={key}
+            icon={getNotificationIcon(key)}
+            title={t(
+              `notificationsScreen.${key}Label`,
+              key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+            )}
+            subtitle={t(
+              `notificationsScreen.${key}Description`,
+              `Manage ${key.replace(/_/g, " ")} notifications`
+            )}
+            onPress={() => handleToggle(key)}
             isSwitch
-            value={currentNotifications[item.key]}
-            disabled={isLoading}
+            value={currentNotifications[key]}
+            isLoading={loadingKey === key}
+            isLastItem={index === notificationKeys.length - 1}
           />
         ))}
       </Section>
 
-      {/* Footer Info */}
       <View className="mx-4 mt-2 mb-6 p-4 bg-gray-200 rounded-xl">
         <Text className="text-xs text-gray-600 text-center leading-5">
-          You can change these settings anytime. Critical security alerts will
-          always be sent for account protection.
+          {t(
+            "notificationsScreen.footerInfo",
+            "You can change these settings anytime. Critical security alerts will always be sent for account protection."
+          )}
         </Text>
       </View>
     </ScrollView>

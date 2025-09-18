@@ -4,7 +4,9 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -19,6 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginModal() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [emailFocused, setEmailFocused] = useState(false);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
@@ -65,11 +68,13 @@ export default function LoginModal() {
   // Error handling
   useEffect(() => {
     if (error) {
-      Alert.alert("Authentication Error", error, [
-        { text: "Try Again", onPress: clearError },
-      ]);
+      Alert.alert(
+        t("auth.authenticationError", "Authentication Error"),
+        error,
+        [{ text: t("auth.tryAgain", "Try Again"), onPress: clearError }]
+      );
     }
-  }, [error, clearError]);
+  }, [error, clearError, t]);
 
   const handleClose = () => {
     clearError();
@@ -83,14 +88,20 @@ export default function LoginModal() {
   const handleEmailContinue = async () => {
     if (!email.trim()) {
       Alert.alert(
-        "Email Required",
-        "Please enter your email address to continue."
+        t("auth.emailRequired", "Email Required"),
+        t(
+          "auth.emailRequiredMessage",
+          "Please enter your email address to continue."
+        )
       );
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      Alert.alert(
+        t("auth.invalidEmail", "Invalid Email"),
+        t("auth.invalidEmailMessage", "Please enter a valid email address.")
+      );
       return;
     }
 
@@ -103,17 +114,23 @@ export default function LoginModal() {
         });
       } else {
         Alert.alert(
-          "Verification Failed",
+          t("auth.verificationFailed", "Verification Failed"),
           result.error ||
-            "We couldn't send a verification code. Please check your email and try again.",
-          [{ text: "Retry", style: "default" }]
+            t(
+              "auth.verificationFailedMessage",
+              "We couldn't send a verification code. Please check your email and try again."
+            ),
+          [{ text: t("common.retry", "Retry"), style: "default" }]
         );
       }
     } catch (error) {
       Alert.alert(
-        "Connection Error",
-        "Please check your internet connection and try again.",
-        [{ text: "Retry", style: "default" }]
+        t("auth.connectionError", "Connection Error"),
+        t(
+          "auth.connectionErrorMessage",
+          "Please check your internet connection and try again."
+        ),
+        [{ text: t("common.retry", "Retry"), style: "default" }]
       );
     }
   };
@@ -123,17 +140,23 @@ export default function LoginModal() {
       const result = await loginWithGoogle();
       if (!result.success) {
         Alert.alert(
-          "Google Sign-In Failed",
+          t("auth.googleSignInFailed", "Google Sign-In Failed"),
           result.error ||
-            "We couldn't sign you in with Google. Please try again.",
-          [{ text: "Retry", style: "default" }]
+            t(
+              "auth.googleSignInFailedMessage",
+              "We couldn't sign you in with Google. Please try again."
+            ),
+          [{ text: t("common.retry", "Retry"), style: "default" }]
         );
       }
     } catch (error) {
       Alert.alert(
-        "Connection Error",
-        "Please check your internet connection and try again.",
-        [{ text: "Retry", style: "default" }]
+        t("auth.connectionError", "Connection Error"),
+        t(
+          "auth.connectionErrorMessage",
+          "Please check your internet connection and try again."
+        ),
+        [{ text: t("common.retry", "Retry"), style: "default" }]
       );
     }
   };
@@ -141,9 +164,12 @@ export default function LoginModal() {
   const handleAppleLogin = async () => {
     if (!isAppleAvailable) {
       Alert.alert(
-        "Apple Sign-In Unavailable",
-        "Apple Sign-In is not available on this device. Please use email or Google instead.",
-        [{ text: "OK", style: "default" }]
+        t("auth.appleSignInUnavailable", "Apple Sign-In Unavailable"),
+        t(
+          "auth.appleSignInUnavailableMessage",
+          "Apple Sign-In is not available on this device. Please use email or Google instead."
+        ),
+        [{ text: t("common.ok", "OK"), style: "default" }]
       );
       return;
     }
@@ -152,68 +178,115 @@ export default function LoginModal() {
       const result = await loginWithApple();
       if (!result.success) {
         Alert.alert(
-          "Apple Sign-In Failed",
+          t("auth.appleSignInFailed", "Apple Sign-In Failed"),
           result.error ||
-            "We couldn't sign you in with Apple. Please try again.",
-          [{ text: "Retry", style: "default" }]
+            t(
+              "auth.appleSignInFailedMessage",
+              "We couldn't sign you in with Apple. Please try again."
+            ),
+          [{ text: t("common.retry", "Retry"), style: "default" }]
         );
       }
     } catch (error) {
       Alert.alert(
-        "Connection Error",
-        "Please check your internet connection and try again.",
-        [{ text: "Retry", style: "default" }]
+        t("auth.connectionError", "Connection Error"),
+        t(
+          "auth.connectionErrorMessage",
+          "Please check your internet connection and try again."
+        ),
+        [{ text: t("common.retry", "Retry"), style: "default" }]
       );
     }
   };
 
   const isValidEmail = email.trim() && validateEmail(email);
 
+  const SocialButton = ({
+    onPress,
+    icon,
+    iconColor,
+    text,
+    disabled = false,
+  }: {
+    onPress: () => void;
+    icon: React.ComponentProps<typeof Ionicons>["name"];
+    iconColor: string;
+    text: string;
+    disabled?: boolean;
+  }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled || isLoading}
+      activeOpacity={0.7}
+      className={`w-full h-14 border-2 border-border-light rounded-xl flex-row items-center justify-center ${
+        disabled || isLoading ? "bg-bg-dark" : "bg-bg-light"
+      }`}
+    >
+      <View className="w-5 h-5 items-center justify-center mr-3">
+        <Ionicons
+          name={icon}
+          size={20}
+          color={disabled || isLoading ? "#9CA3AF" : iconColor}
+        />
+      </View>
+      <Text
+        className={`font-semibold text-base ${
+          disabled || isLoading ? "text-text-placeholder" : "text-text-dark"
+        }`}
+      >
+        {text}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View className="flex-1 bg-white">
-        <SafeAreaView className="flex-1 bg-white">
-          <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <View className="flex-1 bg-bg-light">
+        <SafeAreaView className="flex-1 bg-bg-light">
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             className="flex-1"
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-6 py-4 border-b border-gray-100">
+            <View className="flex-row items-center justify-between px-6 py-4 border-b border-border-light">
               <TouchableOpacity
                 onPress={handleClose}
-                className="w-8 h-8 items-center justify-center"
+                className="w-10 h-10 items-center justify-center rounded-full bg-bg-dark"
                 disabled={isLoading}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={20} color="#374151" />
               </TouchableOpacity>
-              <Text className="text-lg font-semibold text-gray-900">
-                Log in or sign up
+              <Text className="text-lg font-semibold text-text-dark">
+                {t("auth.loginSignupTitle", "Log in or sign up")}
               </Text>
-              <View className="w-8 h-8" />
+              <View className="w-10 h-10" />
             </View>
 
             <View className="flex-1 px-6">
               {/* Welcome Section */}
               <View className="py-8">
-                <Text className="text-2xl font-bold text-gray-900 mb-2">
-                  Welcome to Gobusly
+                <Text className="text-3xl font-bold text-text-dark mb-3">
+                  {t("auth.welcomeTitle", "Welcome to GoBusly")}
                 </Text>
-                <Text className="text-base text-gray-600">
-                  Create an account or sign in to continue
+                <Text className="text-base text-text-gray leading-6">
+                  {t(
+                    "auth.welcomeSubtitle",
+                    "Create an account or sign in to continue"
+                  )}
                 </Text>
               </View>
 
               {/* Email Input Section */}
               <View className="mb-6">
-                <Text className="text-sm font-medium text-gray-700 mb-3">
-                  Email
+                <Text className="text-sm font-medium text-text-dark mb-3">
+                  {t("auth.email", "Email")}
                 </Text>
                 <View
-                  className={`border-2 rounded-xl bg-white ${
-                    emailFocused ? "border-pink-500" : "border-gray-200"
+                  className={`border-2 rounded-xl bg-bg-light ${
+                    emailFocused ? "border-accent" : "border-border-light"
                   }`}
                 >
                   <TextInput
@@ -221,7 +294,10 @@ export default function LoginModal() {
                     onChangeText={setEmail}
                     onFocus={() => setEmailFocused(true)}
                     onBlur={() => setEmailFocused(false)}
-                    placeholder="Enter your email address"
+                    placeholder={t(
+                      "auth.emailPlaceholder",
+                      "Enter your email address"
+                    )}
                     placeholderTextColor="#9CA3AF"
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -230,129 +306,87 @@ export default function LoginModal() {
                     autoComplete="email"
                     textContentType="emailAddress"
                     editable={!isLoading}
-                    className="px-4 py-4 text-base text-gray-900 font-medium"
-                    style={{ minHeight: 56 }}
+                    className="px-4 py-4 text-base text-text-dark font-medium h-14"
                   />
                 </View>
               </View>
 
+              {/* Continue Button */}
               <TouchableOpacity
                 onPress={handleEmailContinue}
                 disabled={!isValidEmail || isLoading}
                 activeOpacity={0.8}
-                className={`w-full py-4 rounded-xl mb-8 ${
-                  !isValidEmail || isLoading
-                    ? "bg-gray-200"
-                    : "bg-pink-600 active:bg-pink-700"
+                className={`w-full h-14 rounded-xl mb-8 items-center justify-center ${
+                  !isValidEmail || isLoading ? "bg-bg-dark" : "bg-accent"
                 }`}
-                style={
-                  !isValidEmail || isLoading
-                    ? {}
-                    : {
-                        shadowColor: "#FF385C",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 8,
-                        elevation: 4,
-                      }
-                }
               >
-                <Text
-                  className={`font-semibold text-center text-base ${
-                    !isValidEmail || isLoading ? "text-gray-400" : "text-white"
-                  }`}
-                >
-                  {isLoading ? "Sending verification code..." : "Continue"}
-                </Text>
+                {isLoading ? (
+                  <View className="flex-row items-center">
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                      className="mr-2"
+                    />
+                    <Text className="font-semibold text-center text-base text-text-light">
+                      {t("auth.sendingCode", "Sending verification code...")}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text
+                    className={`font-semibold text-center text-base ${
+                      !isValidEmail
+                        ? "text-text-placeholder"
+                        : "text-text-light"
+                    }`}
+                  >
+                    {t("auth.continue", "Continue")}
+                  </Text>
+                )}
               </TouchableOpacity>
 
               {/* Divider */}
               <View className="flex-row items-center mb-8">
-                <View className="flex-1 h-px bg-gray-200" />
-                <Text className="px-6 text-gray-500 text-sm font-medium">
-                  or
+                <View className="flex-1 h-px bg-border-light" />
+                <Text className="px-6 text-text-gray text-sm font-medium">
+                  {t("auth.or", "or")}
                 </Text>
-                <View className="flex-1 h-px bg-gray-200" />
+                <View className="flex-1 h-px bg-border-light" />
               </View>
 
               {/* Social Login Buttons */}
               <View className="gap-4 mb-8">
                 {/* Apple Login */}
                 {isAppleAvailable && (
-                  <TouchableOpacity
+                  <SocialButton
                     onPress={handleAppleLogin}
+                    icon="logo-apple"
+                    iconColor="#000000"
+                    text={t("auth.continueWithApple", "Continue with Apple")}
                     disabled={isLoading}
-                    activeOpacity={0.8}
-                    className={`w-full py-4 px-6 border-2 border-gray-200 rounded-xl flex-row items-center justify-center ${
-                      isLoading ? "bg-gray-50" : "bg-white active:bg-gray-50"
-                    }`}
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 3,
-                      elevation: 1,
-                    }}
-                  >
-                    <Ionicons
-                      name="logo-apple"
-                      size={20}
-                      color={isLoading ? "#9CA3AF" : "#000"}
-                      style={{ marginRight: 12 }}
-                    />
-                    <Text
-                      className={`font-semibold text-base ${
-                        isLoading ? "text-gray-400" : "text-gray-900"
-                      }`}
-                    >
-                      Continue with Apple
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 )}
 
                 {/* Google Login */}
-                <TouchableOpacity
+                <SocialButton
                   onPress={handleGoogleLogin}
+                  icon="logo-google"
+                  iconColor="#4285F4"
+                  text={t("auth.continueWithGoogle", "Continue with Google")}
                   disabled={isLoading}
-                  activeOpacity={0.8}
-                  className={`w-full py-4 px-6 border-2 border-gray-200 rounded-xl flex-row items-center justify-center ${
-                    isLoading ? "bg-gray-50" : "bg-white active:bg-gray-50"
-                  }`}
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 3,
-                    elevation: 1,
-                  }}
-                >
-                  <Ionicons
-                    name="logo-google"
-                    size={20}
-                    color={isLoading ? "#9CA3AF" : "#4285F4"}
-                    style={{ marginRight: 12 }}
-                  />
-                  <Text
-                    className={`font-semibold text-base ${
-                      isLoading ? "text-gray-400" : "text-gray-900"
-                    }`}
-                  >
-                    Continue with Google
-                  </Text>
-                </TouchableOpacity>
+                />
               </View>
 
               {/* Terms and Privacy */}
               {!keyboardVisible && (
                 <View className="mt-auto pb-6">
-                  <Text className="text-xs text-gray-500 text-center leading-5">
-                    By continuing, you agree to our{" "}
-                    <Text className="text-gray-700 font-medium">
-                      Terms of Service
+                  <Text className="text-xs text-text-gray text-center leading-5">
+                    {t("auth.termsMessage", "By continuing, you agree to our")}{" "}
+                    <Text className="text-link font-medium">
+                      {t("auth.termsOfService", "Terms of Service")}
                     </Text>{" "}
-                    and{" "}
-                    <Text className="text-gray-700 font-medium">
-                      Privacy Policy
+                    {t("auth.and", "and")}{" "}
+                    <Text className="text-link font-medium">
+                      {t("auth.privacyPolicy", "Privacy Policy")}
                     </Text>
                     .
                   </Text>

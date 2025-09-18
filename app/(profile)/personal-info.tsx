@@ -5,8 +5,8 @@ import { useAuthStore } from "@/src/stores/authStore";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack } from "expo-router";
-import { Mail, Phone, User } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -21,93 +21,198 @@ import {
 } from "react-native";
 
 const PRIMARY_PASSENGER_KEY = "primary_passenger_enabled";
-const PRIMARY_ACCENT_COLOR = "#15203e";
-const PINK_ACCENT_COLOR = "#be185d";
 
-const SettingRow = ({
+const MenuItem = ({
   icon,
-  label,
+  title,
+  subtitle,
   value,
   onPress,
-  isSwitch = false,
-  switchValue,
-  onSwitchChange,
   isEditing = false,
+  disabled = false,
+  isLastItem = false,
+  isLoading = false,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  title: string;
+  subtitle?: string;
+  value?: string;
+  onPress?: () => void;
+  isEditing?: boolean;
+  disabled?: boolean;
+  isLastItem?: boolean;
+  isLoading?: boolean;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    disabled={disabled || isEditing || !onPress}
+    className={`flex-row items-center p-4 ${
+      disabled ? "opacity-60" : ""
+    } ${!isLastItem ? "border-b border-gray-100" : ""}`}
+    activeOpacity={0.7}
+  >
+    <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
+      <Ionicons name={icon} size={18} color="#4B5563" />
+    </View>
+    <View className="flex-1">
+      <Text className="text-base font-medium text-gray-900">{title}</Text>
+      {subtitle && (
+        <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+      )}
+      {value && !isEditing && (
+        <Text className="text-sm text-gray-700 mt-1">{value}</Text>
+      )}
+    </View>
+    <View className="flex-row items-center">
+      {isLoading && (
+        <ActivityIndicator size="small" color="#15203e" className="mr-2" />
+      )}
+      {onPress && !isEditing && !isLoading && (
+        <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+      )}
+    </View>
+  </TouchableOpacity>
+);
+
+const EditableMenuItem = ({
+  icon,
+  title,
+  value,
+  onStartEdit,
+  isEditing,
   onCancel,
   onSave,
   inputValue,
   onInputChange,
   keyboardType = "default",
   isSaving = false,
-}: any) => (
-  <View className="px-4">
-    <View className="flex-row items-center py-4">
-      <View className="flex-row items-center flex-1">
-        <View className="w-6 items-center justify-center mr-4">{icon}</View>
-        <Text className="text-base text-gray-900 font-medium">{label}</Text>
-      </View>
-      {isSwitch ? (
-        <Switch
-          value={switchValue}
-          onValueChange={onSwitchChange}
-          trackColor={{ true: PRIMARY_ACCENT_COLOR, false: "#e5e7eb" }}
-          thumbColor="#fff"
-        />
-      ) : isEditing ? (
-        <View className="flex-row items-center flex-shrink-0">
-          <TouchableOpacity onPress={onCancel}>
-            <Text className="text-sm font-medium text-gray-500 ml-3">
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          {isSaving ? (
-            <ActivityIndicator
-              size="small"
-              color={PRIMARY_ACCENT_COLOR}
-              className="ml-2"
-            />
-          ) : (
-            <TouchableOpacity onPress={onSave}>
-              <Text className="text-sm font-medium text-blue-500 ml-2">
-                Save
+  isLastItem = false,
+  isPhoneField = false,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  title: string;
+  value: string;
+  onStartEdit: () => void;
+  isEditing: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+  inputValue: string;
+  onInputChange: (text: string) => void;
+  keyboardType?: any;
+  isSaving?: boolean;
+  isLastItem?: boolean;
+  isPhoneField?: boolean;
+}) => {
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      // Focus input after a short delay to ensure it's rendered
+      setTimeout(() => {
+        inputRef.current?.focus();
+        // For phone field, set cursor after the "+"
+        if (isPhoneField && inputRef.current) {
+          inputRef.current.setSelection(inputValue.length, inputValue.length);
+        }
+      }, 100);
+    }
+  }, [isEditing, isPhoneField, inputValue.length]);
+
+  const handlePhoneChange = (text: string) => {
+    if (isPhoneField) {
+      // Always ensure phone starts with "+"
+      if (!text.startsWith("+")) {
+        text = "+" + text.replace(/^\+*/, "");
+      }
+      // Prevent deletion of the "+"
+      if (text === "") {
+        text = "+";
+      }
+    }
+    onInputChange(text);
+  };
+
+  if (isEditing) {
+    return (
+      <View className={`p-4 ${!isLastItem ? "border-b border-gray-100" : ""}`}>
+        <View className="flex-row items-center mb-3">
+          <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
+            <Ionicons name={icon} size={18} color="#4B5563" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-base font-medium text-gray-900">{title}</Text>
+          </View>
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={onCancel} disabled={isSaving}>
+              <Text className="text-sm font-medium text-gray-500 mr-3">
+                Cancel
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <TouchableOpacity onPress={onPress} disabled={!onPress}>
-          <View className="flex-row items-center">
-            <Text className="text-sm text-gray-500 font-normal mr-1">
-              {value}
-            </Text>
-            {onPress && (
-              <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#15203e" />
+            ) : (
+              <TouchableOpacity onPress={onSave}>
+                <Text className="text-sm font-medium text-blue-500">Save</Text>
+              </TouchableOpacity>
             )}
           </View>
-        </TouchableOpacity>
-      )}
-    </View>
-
-    {isEditing && (
-      <View className="mt-2 mb-4">
-        <TextInput
-          value={inputValue}
-          onChangeText={onInputChange}
-          className="h-14 pb-2 text-base text-gray-900 border border-gray-200 rounded-lg px-3"
-          keyboardType={keyboardType}
-          returnKeyType="done"
-          autoFocus
-        />
+        </View>
+        {isPhoneField ? (
+          <View className="flex-row items-center h-12 border border-gray-200 rounded-lg">
+            <Text className="text-base text-gray-900 pl-3 pr-1">+</Text>
+            <TextInput
+              ref={inputRef}
+              value={inputValue.substring(1)} // Remove the "+" from display
+              onChangeText={(text) => handlePhoneChange("+" + text)}
+              className="flex-1 h-full text-base text-gray-900 pr-3"
+              keyboardType={keyboardType}
+              returnKeyType="done"
+              onSubmitEditing={onSave}
+              editable={!isSaving}
+              placeholder="1234567890"
+            />
+          </View>
+        ) : (
+          <TextInput
+            ref={inputRef}
+            value={inputValue}
+            onChangeText={onInputChange}
+            className="h-12 text-base text-gray-900 border border-gray-200 rounded-lg px-3"
+            keyboardType={keyboardType}
+            returnKeyType="done"
+            onSubmitEditing={onSave}
+            editable={!isSaving}
+          />
+        )}
       </View>
-    )}
+    );
+  }
+
+  return (
+    <MenuItem
+      icon={icon}
+      title={title}
+      value={value}
+      onPress={onStartEdit}
+      isLastItem={isLastItem}
+    />
+  );
+};
+
+const Section = ({ children }: { children: React.ReactNode }) => (
+  <View className="mb-6 rounded-2xl overflow-hidden bg-white mx-4">
+    {children}
   </View>
 );
 
 export default function PersonalInformationScreen() {
+  const { t } = useTranslation();
   const { user, updateUser } = useAuthStore();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempName, setTempName] = useState(user?.name || "");
   const [tempPhone, setTempPhone] = useState(user?.phone || "");
+  const [originalName, setOriginalName] = useState(user?.name || "");
+  const [originalPhone, setOriginalPhone] = useState(user?.phone || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isPrimaryPassenger, setIsPrimaryPassenger] = useState(false);
 
@@ -125,32 +230,162 @@ export default function PersonalInformationScreen() {
     loadPrimaryPassengerSetting();
   }, []);
 
+  // Update temp values when user data changes
+  useEffect(() => {
+    setTempName(user?.name || "");
+    // Ensure phone always starts with "+" when editing
+    const phoneValue = user?.phone || "";
+    setTempPhone(
+      phoneValue.startsWith("+")
+        ? phoneValue
+        : phoneValue
+          ? `+${phoneValue}`
+          : "+"
+    );
+    setOriginalName(user?.name || "");
+    setOriginalPhone(user?.phone || "");
+  }, [user]);
+
   const savePrimaryPassengerSetting = async (value: boolean) => {
     try {
       await AsyncStorage.setItem(PRIMARY_PASSENGER_KEY, JSON.stringify(value));
       setIsPrimaryPassenger(value);
     } catch (error) {
       console.error("Failed to save primary passenger setting:", error);
-      Alert.alert("Error", "Failed to save preference");
+      Alert.alert(
+        t("common.error", "Error"),
+        t("personalInfo.savePreferenceError", "Failed to save preference")
+      );
     }
   };
 
+  const hasUnsavedChanges = () => {
+    if (editingField === "name") {
+      return tempName.trim() !== originalName;
+    }
+    if (editingField === "phone") {
+      // For phone, compare without the "+" to handle cases where original might not have "+"
+      const currentPhone = tempPhone.replace(/^\+/, "");
+      const originalPhoneClean = originalPhone.replace(/^\+/, "");
+      return currentPhone !== originalPhoneClean;
+    }
+    return false;
+  };
+
   const handleStartEdit = (field: string) => {
-    setEditingField(field);
+    // Initialize phone with "+" if starting to edit phone
+    if (field === "phone") {
+      const phoneValue = user?.phone || "";
+      setTempPhone(
+        phoneValue.startsWith("+")
+          ? phoneValue
+          : phoneValue
+            ? `+${phoneValue}`
+            : "+"
+      );
+    }
+
+    if (editingField && hasUnsavedChanges()) {
+      Alert.alert(
+        t("personalInfo.unsavedChangesTitle", "Unsaved Changes"),
+        t(
+          "personalInfo.unsavedChangesMessage",
+          "You have unsaved changes. What would you like to do?"
+        ),
+        [
+          {
+            text: t("personalInfo.discardChanges", "Discard"),
+            style: "destructive",
+            onPress: () => {
+              handleCancelEdit();
+              setEditingField(field);
+            },
+          },
+          {
+            text: t("personalInfo.saveChanges", "Save"),
+            onPress: async () => {
+              await handleSave(editingField);
+              setEditingField(field);
+            },
+          },
+          {
+            text: t("common.cancel", "Cancel"),
+            style: "cancel",
+          },
+        ]
+      );
+    } else {
+      setEditingField(field);
+    }
   };
 
   const handleCancelEdit = () => {
     Keyboard.dismiss();
     setEditingField(null);
-    setTempName(user?.name || "");
-    setTempPhone(user?.phone || "");
+    setTempName(originalName);
+    // Reset phone to original value
+    const phoneValue = originalPhone || "";
+    setTempPhone(
+      phoneValue.startsWith("+")
+        ? phoneValue
+        : phoneValue
+          ? `+${phoneValue}`
+          : "+"
+    );
   };
 
-  const handleSave = async (field: string) => {
-    if (!user?._id) return;
+  const handleBackgroundTap = () => {
+    if (editingField && hasUnsavedChanges()) {
+      Alert.alert(
+        t("personalInfo.unsavedChangesTitle", "Unsaved Changes"),
+        t(
+          "personalInfo.unsavedChangesMessage",
+          "You have unsaved changes. What would you like to do?"
+        ),
+        [
+          {
+            text: t("personalInfo.discardChanges", "Discard"),
+            style: "destructive",
+            onPress: handleCancelEdit,
+          },
+          {
+            text: t("personalInfo.saveChanges", "Save"),
+            onPress: () => handleSave(editingField),
+          },
+          {
+            text: t("common.cancel", "Cancel"),
+            style: "cancel",
+          },
+        ]
+      );
+    } else {
+      Keyboard.dismiss();
+      setEditingField(null);
+    }
+  };
+
+  const handleSave = async (field: string | null) => {
+    if (!field || !user?._id) return;
+
     const value = field === "name" ? tempName : tempPhone;
-    if (!value.trim()) {
-      Alert.alert("Error", "This field cannot be empty");
+    if (field === "phone") {
+      // For phone, check if it's just "+" or empty after removing "+"
+      const phoneDigits = tempPhone.replace(/^\+/, "").trim();
+      if (!phoneDigits) {
+        Alert.alert(
+          t("common.error", "Error"),
+          t(
+            "personalInfo.phoneRequiredError",
+            "Please enter a valid phone number"
+          )
+        );
+        return;
+      }
+    } else if (!value.trim()) {
+      Alert.alert(
+        t("common.error", "Error"),
+        t("personalInfo.fieldRequiredError", "This field cannot be empty")
+      );
       return;
     }
 
@@ -160,18 +395,30 @@ export default function PersonalInformationScreen() {
       if (field === "name") {
         response = await profileService.editName(value.trim(), user._id);
         updateUser({ name: response.name || value.trim() });
+        setOriginalName(response.name || value.trim());
       } else if (field === "phone") {
-        response = await profileService.editPhone(value.trim(), user._id);
-        updateUser({ phone: response.phone || value.trim() });
+        // Send the phone with "+" to the API
+        response = await profileService.editPhone(tempPhone.trim(), user._id);
+        updateUser({ phone: response.phone || tempPhone.trim() });
+        setOriginalPhone(response.phone || tempPhone.trim());
       }
+
       Keyboard.dismiss();
       setEditingField(null);
+
       Alert.alert(
-        "Success",
-        `${field === "name" ? "Name" : "Phone number"} updated successfully`
+        t("common.success", "Success"),
+        t(
+          "personalInfo.updateSuccess",
+          `${field === "name" ? "Name" : "Phone number"} updated successfully`
+        )
       );
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to update information");
+      Alert.alert(
+        t("common.error", "Error"),
+        error.message ||
+          t("personalInfo.updateError", "Failed to update information")
+      );
     } finally {
       setIsLoading(false);
     }
@@ -179,78 +426,106 @@ export default function PersonalInformationScreen() {
 
   const handleEmailSupport = () => {
     Alert.alert(
-      "Contact Support",
-      "To change or delete your email address, please contact our support team at support@gobusly.com",
-      [{ text: "Got it" }]
+      t("personalInfo.contactSupportTitle", "Contact Support"),
+      t(
+        "personalInfo.contactSupportMessage",
+        "To change or delete your email address, please contact our support team at support@gobusly.com"
+      ),
+      [{ text: t("personalInfo.gotIt", "Got it") }]
     );
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <TouchableWithoutFeedback onPress={handleBackgroundTap}>
       <View className="flex-1 bg-gray-100">
-        <Stack.Screen options={{ headerTitle: "Personal Information" }} />
+        <Stack.Screen
+          options={{
+            headerTitle: t("personalInfo.title", "Personal Information"),
+          }}
+        />
         <ScrollView
+          className="py-4"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Account Information Section */}
-          <View className="mt-6 mb-6 mx-4 rounded-xl overflow-hidden bg-white">
-            <SettingRow
-              icon={<User size={24} color={PINK_ACCENT_COLOR} />}
-              label="Full Name"
-              value={user?.name || ""}
-              onPress={() => handleStartEdit("name")}
+          <Section>
+            <EditableMenuItem
+              icon="person-outline"
+              title={t("personalInfo.fullName", "Full Name")}
+              value={user?.name || t("personalInfo.notSet", "Not set")}
+              onStartEdit={() => handleStartEdit("name")}
               isEditing={editingField === "name"}
               onCancel={handleCancelEdit}
               onSave={() => handleSave("name")}
               inputValue={tempName}
               onInputChange={setTempName}
-              isSaving={isLoading}
+              isSaving={isLoading && editingField === "name"}
             />
-            <View className="h-[1px] bg-gray-200 ml-14" />
-            <SettingRow
-              icon={<Phone size={24} color={PINK_ACCENT_COLOR} />}
-              label="Phone Number"
-              value={user?.phone || ""}
-              onPress={() => handleStartEdit("phone")}
+
+            <EditableMenuItem
+              icon="call-outline"
+              title={t("personalInfo.phoneNumber", "Phone Number")}
+              value={user?.phone || t("personalInfo.notSet", "Not set")}
+              onStartEdit={() => handleStartEdit("phone")}
               isEditing={editingField === "phone"}
               onCancel={handleCancelEdit}
               onSave={() => handleSave("phone")}
               inputValue={tempPhone}
               onInputChange={setTempPhone}
               keyboardType="phone-pad"
-              isSaving={isLoading}
+              isSaving={isLoading && editingField === "phone"}
+              isPhoneField={true}
             />
-            <View className="h-[1px] bg-gray-200 ml-14" />
-            <SettingRow
-              icon={<Mail size={24} color={PINK_ACCENT_COLOR} />}
-              label="Email Address"
-              value={user?.email || ""}
+
+            <MenuItem
+              icon="mail-outline"
+              title={t("personalInfo.emailAddress", "Email Address")}
+              value={user?.email || t("personalInfo.notSet", "Not set")}
               onPress={handleEmailSupport}
+              isLastItem
             />
-          </View>
+          </Section>
 
           {/* Primary Passenger Setting */}
-          <View className="mx-4 mb-6">
-            <View className="bg-white p-4 rounded-xl">
+          <Section>
+            <View className="p-4">
               <View className="flex-row items-center justify-between">
                 <View className="flex-1 mr-4">
-                  <Text className="text-base font-medium text-gray-900">
-                    Use as Primary Passenger
-                  </Text>
-                  <Text className="text-sm text-gray-500 mt-1">
-                    Auto-fill these details during checkout.
+                  <View className="flex-row items-center mb-1">
+                    <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
+                      <Ionicons
+                        name="person-circle-outline"
+                        size={18}
+                        color="#4B5563"
+                      />
+                    </View>
+                    <Text className="text-base font-medium text-gray-900">
+                      {t(
+                        "personalInfo.primaryPassengerTitle",
+                        "Use as Primary Passenger"
+                      )}
+                    </Text>
+                  </View>
+                  <Text className="text-sm text-gray-500 ml-12">
+                    {t(
+                      "personalInfo.primaryPassengerDescription",
+                      "Auto-fill these details during checkout."
+                    )}
                   </Text>
                 </View>
                 <Switch
                   value={isPrimaryPassenger}
                   onValueChange={savePrimaryPassengerSetting}
-                  trackColor={{ true: PRIMARY_ACCENT_COLOR, false: "#E5E7EB" }}
+                  trackColor={{ true: "#15203e", false: "#E5E7EB" }}
                   thumbColor="#fff"
                 />
               </View>
             </View>
-          </View>
+          </Section>
+
+          {/* Add some bottom padding for better scrolling */}
+          <View className="h-6" />
         </ScrollView>
       </View>
     </TouchableWithoutFeedback>

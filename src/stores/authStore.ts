@@ -20,6 +20,8 @@ interface AuthActions {
   updateUser: (updates: Partial<User>) => void;
   clearUser: () => void;
 
+  savePushToken: (token: string) => Promise<void>;
+
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   initialize: () => Promise<void>;
@@ -202,7 +204,6 @@ export const useAuthStore = create<AuthStore>()(
           }
         },
 
-        // user management
         setUser: (user: User) => set({ user, isAuthenticated: true }),
 
         updateUser: (updates: Partial<User>) => {
@@ -211,8 +212,25 @@ export const useAuthStore = create<AuthStore>()(
         },
 
         clearUser: () => set({ user: null, isAuthenticated: false }),
+        savePushToken: async (token: string) => {
+          const currentUser = get().user;
+          if (currentUser) {
+            set({ user: { ...currentUser, expoPushToken: token } });
+            try {
+              await apiClient.post(
+                `/notifications/push-token/${currentUser._id}`,
+                {
+                  token,
+                }
+              );
+            } catch (err) {
+              console.warn("Failed to save push token:", err);
+            }
+          } else {
+            await AsyncStorage.setItem("guest_push_token", token);
+          }
+        },
 
-        // state management
         setLoading: (loading: boolean) => set({ isLoading: loading }),
         setError: (error: string | null) => set({ error }),
 

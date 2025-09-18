@@ -1,8 +1,11 @@
-"use client";
-
+import { LANGUAGES } from "@/src/constants/languages";
+import i18n from "@/src/i18n";
+import { useAuthStore } from "@/src/stores/authStore";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +15,6 @@ import {
   View,
 } from "react-native";
 
-// Reusable component for each list item
 const MenuItem = ({
   icon,
   title,
@@ -22,6 +24,7 @@ const MenuItem = ({
   disabled = false,
   flag = null,
   isLastItem = false,
+  isLoading = false,
 }: {
   icon?: React.ComponentProps<typeof Ionicons>["name"];
   title: string;
@@ -31,13 +34,15 @@ const MenuItem = ({
   disabled?: boolean;
   flag?: string | null;
   isLastItem?: boolean;
+  isLoading?: boolean;
 }) => (
   <TouchableOpacity
     onPress={onPress}
     disabled={disabled}
-    className={`flex-row items-center p-4 ${disabled ? "opacity-50" : ""} ${
-      !isLastItem ? "border-b border-gray-100" : ""
-    }`}
+    className={`flex-row items-center p-4 ${
+      disabled ? "opacity-60" : ""
+    } ${!isLastItem ? "border-b border-gray-100" : ""}`}
+    activeOpacity={0.7}
   >
     <View className="w-8 h-8 rounded-lg flex items-center justify-center mr-4 bg-gray-100">
       {flag ? (
@@ -52,103 +57,137 @@ const MenuItem = ({
         <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
       )}
     </View>
-    {isSelected ? (
-      <Ionicons name="checkmark-circle" size={24} color="#15203e" />
-    ) : null}
+    <View className="flex-row items-center">
+      {isLoading && (
+        <ActivityIndicator size="small" color="#15203e" className="mr-2" />
+      )}
+      {isSelected && !isLoading && (
+        <Ionicons name="checkmark-circle" size={24} color="#15203e" />
+      )}
+    </View>
   </TouchableOpacity>
 );
 
-// Reusable component to group menu items
-const Section = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) => (
-  <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
-    <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-      {title}
-    </Text>
+const Section = ({ children }: { children: React.ReactNode }) => (
+  <View className="mb-6 rounded-2xl overflow-hidden bg-white mx-4">
     {children}
   </View>
 );
 
-interface Language {
-  code: string;
-  name: string;
-  nativeName: string;
-  flag: string;
-}
-
-const languages: Language[] = [
-  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸" },
-  { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸" },
-  { code: "fr", name: "French", nativeName: "Français", flag: "🇫🇷" },
-  { code: "de", name: "German", nativeName: "Deutsch", flag: "🇩🇪" },
-  { code: "it", name: "Italian", nativeName: "Italiano", flag: "🇮🇹" },
-  { code: "pt", name: "Portuguese", nativeName: "Português", flag: "🇵🇹" },
-  { code: "ru", name: "Russian", nativeName: "Русский", flag: "🇷🇺" },
-  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🇸🇦" },
-  { code: "zh", name: "Chinese", nativeName: "中文", flag: "🇨🇳" },
-  { code: "ja", name: "Japanese", nativeName: "日本語", flag: "🇯🇵" },
-];
+const LANGUAGE_STORAGE_KEY = "@user_language";
 
 export default function LanguageScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { user, updateUser, isAuthenticated } = useAuthStore();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [updatingLanguage, setUpdatingLanguage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        let savedLanguage = i18n.language || "en";
+
+        // Priority: authenticated user's preference > i18n current language > AsyncStorage > default
+        if (isAuthenticated && user?.language) {
+          savedLanguage = user.language;
+        } else if (!i18n.language || i18n.language === "cimode") {
+          const localLanguage =
+            await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+          if (localLanguage !== null) {
+            savedLanguage = localLanguage;
+          }
+        }
+
+        setSelectedLanguage(savedLanguage);
+
+        // Ensure i18n is in sync
+        if (i18n.language !== savedLanguage) {
+          await i18n.changeLanguage(savedLanguage);
+        }
+      } catch (error) {
+        console.error("Failed to load language from storage", error);
+        Alert.alert(t("common.error"), "Failed to load language preferences");
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    loadLanguage();
+  }, [isAuthenticated, user, t]);
 
   const handleLanguageSelect = async (languageCode: string) => {
-    if (languageCode === selectedLanguage) return;
+    if (languageCode === selectedLanguage || updatingLanguage) return;
 
-    setIsLoading(true);
+    setUpdatingLanguage(languageCode);
+
     try {
-      // Here you would typically save to your backend/storage
-      // await settingsService.updateLanguage(languageCode);
-
+      // Optimistic update
       setSelectedLanguage(languageCode);
+      await i18n.changeLanguage(languageCode);
+      await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, languageCode);
 
-      // Show success message
-      const language = languages.find((l) => l.code === languageCode);
+      if (isAuthenticated && user) {
+        updateUser({ language: languageCode });
+        console.log("Language updated in user profile:", languageCode);
+      }
+
+      const languageName = t(`languages.${languageCode}`);
       Alert.alert(
-        "Language Updated",
-        `Language changed to ${language?.name}. Some changes may require restarting the app.`
+        t("settings.languageUpdated"),
+        t("settings.languageChangedTo", { language: languageName }) +
+          " " +
+          (isAuthenticated
+            ? t("settings.accountSynced")
+            : t("settings.signInToSync"))
       );
     } catch (error) {
-      Alert.alert("Error", "Failed to update language. Please try again.");
+      console.error("Failed to save language", error);
+      Alert.alert(t("common.error"), "Failed to update language");
+
+      // Revert optimistic update
+      await i18n.changeLanguage(selectedLanguage);
+      setSelectedLanguage(selectedLanguage);
     } finally {
-      setIsLoading(false);
+      setUpdatingLanguage(null);
     }
   };
 
+  if (isInitialLoading) {
+    return (
+      <View className="flex-1 bg-gray-100 justify-center items-center">
+        <ActivityIndicator size="large" color="#15203e" />
+        <Text className="mt-2 text-sm text-gray-600">
+          {t("common.loading")}
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView className="flex-1 bg-gray-100 py-4">
-      {/* Language Section */}
-      <Section title="Display Language">
-        {isLoading && (
-          <View className="absolute inset-0 z-10 bg-white bg-opacity-70 flex items-center justify-center">
-            <ActivityIndicator size="large" color="#15203e" />
-          </View>
-        )}
-        {languages.map((language, index) => (
+      <Section>
+        {LANGUAGES.map((language, index) => (
           <MenuItem
             key={language.code}
-            title={language.name}
+            title={t(`languages.${language.code}`)}
             subtitle={language.nativeName}
             flag={language.flag}
-            isSelected={selectedLanguage === language.code}
+            isSelected={selectedLanguage === language.code && !updatingLanguage}
+            isLoading={updatingLanguage === language.code}
             onPress={() => handleLanguageSelect(language.code)}
-            disabled={isLoading}
-            isLastItem={index === languages.length - 1}
+            disabled={!!updatingLanguage}
+            isLastItem={index === LANGUAGES.length - 1}
           />
         ))}
       </Section>
 
-      {/* Info Footer */}
       <View className="px-4 mt-2 mb-6">
         <Text className="text-xs text-gray-500 text-center leading-5">
-          Changes to the display language will be applied immediately.
+          {isAuthenticated
+            ? t("settings.syncMessage")
+            : t("settings.signInToSync")}
         </Text>
       </View>
     </ScrollView>

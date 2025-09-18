@@ -1,5 +1,3 @@
-"use client";
-
 import { profileService } from "@/src/services/api/profile";
 import { useAuthStore } from "@/src/stores/authStore";
 import { UserPrivacySettings } from "@/src/types/auth";
@@ -8,7 +6,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   Switch,
@@ -19,7 +19,6 @@ import {
 
 const GUEST_PRIVACY_KEY = "guest_privacy_preferences";
 
-// Reusable component for each list item
 const MenuItem = ({
   icon,
   title,
@@ -29,6 +28,8 @@ const MenuItem = ({
   disabled = false,
   isSwitch = false,
   value = false,
+  isLoading = false,
+  isLastItem = false,
 }: {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   title: string;
@@ -38,113 +39,158 @@ const MenuItem = ({
   disabled?: boolean;
   isSwitch?: boolean;
   value?: boolean;
-}) => (
-  <TouchableOpacity
-    onPress={isSwitch ? onPress : undefined}
-    disabled={disabled}
-    className={`flex-row items-center border-b border-gray-100 p-4 ${disabled ? "opacity-50" : ""}`}
-  >
-    <View
-      className={`w-8 h-8 rounded-lg flex items-center justify-center mr-4 ${
-        destructive ? "bg-red-50" : "bg-gray-100"
-      }`}
-    >
-      <Ionicons
-        name={icon}
-        size={18}
-        color={destructive ? "#EF4444" : "#4B5563"}
-      />
-    </View>
-    <View className="flex-1">
-      <Text
-        className={`text-base font-medium ${
-          destructive ? "text-red-500" : "text-gray-900"
+  isLoading?: boolean;
+  isLastItem?: boolean;
+}) => {
+  if (isSwitch) {
+    // For switch items, only the switch should be touchable, not the whole row
+    return (
+      <View
+        className={`flex-row items-center p-4 ${disabled ? "opacity-60" : ""} ${
+          !isLastItem ? "border-b border-gray-100" : ""
         }`}
       >
-        {title}
-      </Text>
-      {subtitle && (
-        <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
-      )}
-    </View>
-    {isSwitch ? (
-      <Switch
-        value={value}
-        onValueChange={onPress}
-        trackColor={{ true: "#15203e", false: "#e5e7eb" }}
-        thumbColor="#fff"
-        disabled={disabled}
-      />
-    ) : (
-      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-    )}
-  </TouchableOpacity>
-);
+        <View
+          className={`w-8 h-8 rounded-lg flex items-center justify-center mr-4 ${
+            destructive ? "bg-red-50" : "bg-gray-100"
+          }`}
+        >
+          <Ionicons
+            name={icon}
+            size={18}
+            color={destructive ? "#EF4444" : "#4B5563"}
+          />
+        </View>
+        <View className="flex-1">
+          <Text
+            className={`text-base font-medium ${
+              destructive ? "text-red-500" : "text-gray-900"
+            }`}
+          >
+            {title}
+          </Text>
+          {subtitle && (
+            <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+          )}
+        </View>
+        <View className="w-fit items-end">
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#15203e" />
+          ) : (
+            <Switch
+              value={value}
+              onValueChange={onPress}
+              trackColor={{ true: "#15203e", false: "#e5e7eb" }}
+              thumbColor="#fff"
+              disabled={disabled}
+            />
+          )}
+        </View>
+      </View>
+    );
+  }
 
-// Reusable component to group menu items
+  // For non-switch items (buttons), the whole row is touchable
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      className={`flex-row items-center p-4 ${disabled ? "opacity-60" : ""} ${
+        !isLastItem ? "border-b border-gray-100" : ""
+      }`}
+      activeOpacity={0.7}
+    >
+      <View
+        className={`w-8 h-8 rounded-lg flex items-center justify-center mr-4 ${
+          destructive ? "bg-red-50" : "bg-gray-100"
+        }`}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={destructive ? "#EF4444" : "#4B5563"}
+        />
+      </View>
+      <View className="flex-1">
+        <Text
+          className={`text-base font-medium ${
+            destructive ? "text-red-500" : "text-gray-900"
+          }`}
+        >
+          {title}
+        </Text>
+        {subtitle && (
+          <Text className="text-sm text-gray-500 mt-1">{subtitle}</Text>
+        )}
+      </View>
+      {isLoading ? (
+        <ActivityIndicator size="small" color="#15203e" className="mr-2" />
+      ) : (
+        <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+      )}
+    </TouchableOpacity>
+  );
+};
+
 const Section = ({
   title,
   children,
 }: {
-  title: string;
+  title?: string;
   children: React.ReactNode;
 }) => (
-  <View className="mb-6 rounded-xl overflow-hidden bg-white mx-4">
-    <Text className="text-sm font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-      {title}
-    </Text>
+  <View className="mb-6 rounded-2xl overflow-hidden bg-white mx-4">
+    {/* {title && (
+      <View className="px-4 py-3 border-b border-gray-100">
+        <Text className="text-lg font-semibold text-gray-900">{title}</Text>
+      </View>
+    )} */}
     {children}
   </View>
 );
 
 interface PrivacyItem {
   key: keyof UserPrivacySettings;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
 }
 
 const privacyItems: PrivacyItem[] = [
   {
     key: "share_contact_with_operators",
-    label: "Contact Sharing with Operators",
-    description:
-      "Allow bus operators to contact you directly for trip updates and important information",
+    labelKey: "contactSharingLabel",
+    descriptionKey: "contactSharingDescription",
     icon: "phone-portrait-outline",
   },
   {
     key: "location_based_recommendations",
-    label: "Location-Based Suggestions",
-    description:
-      "Use your location to suggest nearby stations and popular routes",
+    labelKey: "locationSuggestionsLabel",
+    descriptionKey: "locationSuggestionsDescription",
     icon: "location-outline",
   },
   {
     key: "travel_history_analytics",
-    label: "Personalized Recommendations",
-    description:
-      "Use your booking history to suggest routes and operators you might like",
+    labelKey: "personalizedRecommendationsLabel",
+    descriptionKey: "personalizedRecommendationsDescription",
     icon: "analytics-outline",
   },
   {
     key: "marketing_communications",
-    label: "Promotional Offers",
-    description:
-      "Receive special deals and offers from GoBusly and partner operators",
+    labelKey: "promotionalOffersLabel",
+    descriptionKey: "promotionalOffersDescription",
     icon: "mail-outline",
   },
   {
     key: "data_analytics",
-    label: "Service Improvement",
-    description:
-      "Help us improve GoBusly by sharing anonymous usage and performance data",
+    labelKey: "serviceImprovementLabel",
+    descriptionKey: "serviceImprovementDescription",
     icon: "bar-chart-outline",
   },
   {
     key: "emergency_contact_sharing",
-    label: "Emergency Contact Sharing",
-    description:
-      "Share your emergency contact with operators for safety and security purposes",
+    labelKey: "emergencyContactSharingLabel",
+    descriptionKey: "emergencyContactSharingDescription",
     icon: "person-outline",
   },
 ];
@@ -160,8 +206,9 @@ const defaultPrivacySettings: UserPrivacySettings = {
 
 export default function PrivacySettingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user, updateUser, isAuthenticated } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [guestPrivacySettings, setGuestPrivacySettings] =
     useState<UserPrivacySettings>(defaultPrivacySettings);
 
@@ -188,7 +235,10 @@ export default function PrivacySettingsScreen() {
       setGuestPrivacySettings(settings);
     } catch (error) {
       console.error("Failed to save guest privacy preferences:", error);
-      Alert.alert("Error", "Failed to save privacy preferences");
+      Alert.alert(
+        t("common.error", "Error"),
+        t("privacyScreen.saveError", "Failed to save privacy preferences")
+      );
     }
   };
 
@@ -199,45 +249,91 @@ export default function PrivacySettingsScreen() {
   };
 
   const handleToggle = async (key: keyof UserPrivacySettings) => {
-    setIsLoading(true);
+    // Prevent multiple simultaneous updates
+    if (loadingKey) return;
+
+    setLoadingKey(key);
 
     try {
       const currentSettings = getCurrentPrivacySettings();
-      const updatedSettings: UserPrivacySettings = {
-        ...currentSettings,
-        [key]: !currentSettings[key],
-      };
+      const newValue = !currentSettings[key];
 
-      if (isAuthenticated && user) {
-        await profileService.editPrivacySettings(user._id, updatedSettings);
+      console.log(
+        `Toggling privacy ${key} from ${currentSettings[key]} to ${newValue}`
+      );
+
+      if (isAuthenticated && user?._id) {
+        // Optimistic update
+        const updatedSettings: UserPrivacySettings = {
+          ...currentSettings,
+          [key]: newValue,
+        };
         updateUser({ privacySettings: updatedSettings });
+
+        try {
+          // Call API to sync with backend
+          const response = await profileService.editPrivacySettings(
+            user._id,
+            updatedSettings
+          );
+          console.log("Privacy API response:", response);
+
+          // If the API returns updated settings, use those
+          if (response.privacySettings) {
+            updateUser({ privacySettings: response.privacySettings });
+          }
+        } catch (apiError: any) {
+          console.error(`Privacy API call failed for ${key}:`, apiError);
+
+          // Revert optimistic update on API failure
+          updateUser({ privacySettings: currentSettings });
+
+          // Only show error if it's not a success message being treated as error
+          if (!apiError.message?.includes("successfully")) {
+            throw apiError;
+          }
+        }
       } else {
+        // For guest mode
+        const updatedSettings: UserPrivacySettings = {
+          ...currentSettings,
+          [key]: newValue,
+        };
         await saveGuestPrivacySettings(updatedSettings);
       }
     } catch (error: any) {
+      console.error(`Failed to update privacy ${key}:`, error);
+
       Alert.alert(
-        "Error",
-        error.message || "Failed to update privacy settings"
+        t("privacyScreen.updateErrorTitle", "Update Failed"),
+        error.message ||
+          t(
+            "privacyScreen.updateErrorMessage",
+            "Failed to update privacy settings. Please try again."
+          )
       );
     } finally {
-      setIsLoading(false);
+      setLoadingKey(null);
     }
   };
 
   const handleResetToDefaults = () => {
     Alert.alert(
-      "Reset Privacy Settings",
-      "This will reset all privacy settings to their default values. Are you sure?",
+      t("privacyScreen.resetTitle", "Reset Privacy Settings"),
+      t(
+        "privacyScreen.resetMessage",
+        "This will reset all privacy settings to their default values. Are you sure?"
+      ),
       [
         {
-          text: "Cancel",
+          text: t("common.cancel", "Cancel"),
           style: "cancel",
         },
         {
-          text: "Reset",
+          text: t("privacyScreen.resetButton", "Reset"),
           style: "destructive",
           onPress: async () => {
-            setIsLoading(true);
+            setLoadingKey("reset");
             try {
               if (isAuthenticated && user) {
                 await profileService.editPrivacySettings(
@@ -248,13 +344,25 @@ export default function PrivacySettingsScreen() {
               } else {
                 await saveGuestPrivacySettings(defaultPrivacySettings);
               }
+
+              Alert.alert(
+                t("common.success", "Success"),
+                t(
+                  "privacyScreen.resetSuccess",
+                  "Privacy settings have been reset to defaults"
+                )
+              );
             } catch (error: any) {
               Alert.alert(
-                "Error",
-                error.message || "Failed to reset privacy settings"
+                t("common.error", "Error"),
+                error.message ||
+                  t(
+                    "privacyScreen.resetError",
+                    "Failed to reset privacy settings"
+                  )
               );
             } finally {
-              setIsLoading(false);
+              setLoadingKey(null);
             }
           },
         },
@@ -267,53 +375,72 @@ export default function PrivacySettingsScreen() {
   return (
     <ScrollView className="flex-1 bg-gray-100 py-4">
       {!isAuthenticated && (
-        <View className="mx-4 mb-6 rounded-xl overflow-hidden bg-white p-4">
+        <View className="mx-4 mb-6 rounded-2xl overflow-hidden bg-white p-4">
           <Text className="text-sm font-semibold text-blue-900 mb-1">
-            Guest Mode
+            {t("privacyScreen.guestModeTitle", "Guest Mode")}
           </Text>
           <Text className="text-xs text-blue-800 leading-5">
-            Your privacy preferences are saved locally. Sign in to sync across
-            devices and enjoy enhanced privacy controls.
+            {t(
+              "privacyScreen.guestModeMessage",
+              "Your privacy preferences are saved locally. Sign in to sync across devices and enjoy enhanced privacy controls."
+            )}
           </Text>
         </View>
       )}
 
       {/* Privacy Controls Section */}
-      <Section title="Privacy Controls">
-        {privacyItems.map((item) => (
+      <Section
+        title={t("privacyScreen.privacyControlsTitle", "Privacy Controls")}
+      >
+        {privacyItems.map((item, index) => (
           <MenuItem
             key={item.key}
             icon={item.icon}
-            title={item.label}
-            subtitle={item.description}
+            title={t(`privacyScreen.${item.labelKey}`, item.labelKey)}
+            subtitle={t(
+              `privacyScreen.${item.descriptionKey}`,
+              item.descriptionKey
+            )}
             isSwitch
             value={currentSettings[item.key]}
             onPress={() => handleToggle(item.key)}
-            disabled={isLoading}
+            disabled={!!loadingKey}
+            isLoading={loadingKey === item.key}
+            isLastItem={index === privacyItems.length - 1}
           />
         ))}
       </Section>
 
       {/* Data Management Section */}
-      <Section title="Data Management">
+      <Section
+        title={t("privacyScreen.dataManagementTitle", "Data Management")}
+      >
         <MenuItem
           icon="reload-outline"
-          title="Reset to Defaults"
-          subtitle="Restore all privacy settings to recommended defaults"
+          title={t("privacyScreen.resetToDefaultsLabel", "Reset to Defaults")}
+          subtitle={t(
+            "privacyScreen.resetToDefaultsDescription",
+            "Restore all privacy settings to recommended defaults"
+          )}
           onPress={handleResetToDefaults}
           destructive
-          disabled={isLoading}
+          disabled={!!loadingKey}
+          isLoading={loadingKey === "reset"}
         />
         {isAuthenticated && (
           <MenuItem
             icon="download-outline"
-            title="Export My Data"
-            subtitle="Download a copy of your personal data"
+            title={t("privacyScreen.exportDataLabel", "Export My Data")}
+            subtitle={t(
+              "privacyScreen.exportDataDescription",
+              "Download a copy of your personal data"
+            )}
             onPress={() =>
               WebBrowser.openBrowserAsync(
                 "https://gobusly.com/user/data-export"
               )
             }
+            isLastItem
           />
         )}
       </Section>
@@ -321,10 +448,10 @@ export default function PrivacySettingsScreen() {
       {/* Footer & Legal Links */}
       <View className="px-4 mt-2 mb-6">
         <Text className="text-xs text-gray-500 text-center leading-5">
-          These settings control how GoBusly and partner bus operators can
-          interact with you and use your data. We never sell your personal
-          information to third parties. Some settings may be required for
-          essential trip communications.
+          {t(
+            "privacyScreen.footerInfo",
+            "These settings control how GoBusly and partner bus operators can interact with you and use your data. We never sell your personal information to third parties. Some settings may be required for essential trip communications."
+          )}
         </Text>
       </View>
 
@@ -337,7 +464,7 @@ export default function PrivacySettingsScreen() {
           }
         >
           <Text className="text-pink-600 text-sm font-medium">
-            Privacy Policy
+            {t("privacyScreen.privacyPolicyLink", "Privacy Policy")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -345,7 +472,9 @@ export default function PrivacySettingsScreen() {
             WebBrowser.openBrowserAsync("https://gobusly.com/legal/data-policy")
           }
         >
-          <Text className="text-pink-600 text-sm font-medium">Data Policy</Text>
+          <Text className="text-pink-600 text-sm font-medium">
+            {t("privacyScreen.dataPolicyLink", "Data Policy")}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
