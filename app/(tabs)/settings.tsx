@@ -7,7 +7,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-export default function ProfileScreen() {
+export default function SettingsScreen() {
   const { t } = useTranslation();
   const { user, isAuthenticated, logout } = useAuthStore();
 
@@ -152,7 +152,7 @@ export default function ProfileScreen() {
   );
 
   return (
-    <ScrollView className="flex-1 bg-gray-100 py-4">
+    <ScrollView className="flex-1 bg-gray-100 py-6">
       {/* Apple-style Header */}
       <Section>
         {isAuthenticated ? (
@@ -162,7 +162,7 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             {/* Avatar */}
-            <View className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center mr-4">
+            <View className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mr-4">
               <Text className="text-white text-xl font-semibold">
                 {getInitials(user?.name || "U")}
               </Text>
@@ -174,7 +174,7 @@ export default function ProfileScreen() {
                 {user?.name || "User"}
               </Text>
               <Text className="text-sm text-gray-500 mt-1">{user?.email}</Text>
-              <Text className="text-sm text-blue-500 mt-1">
+              <Text className="text-sm text-accent mt-1">
                 {t("profileTab.personalInformation")}
               </Text>
             </View>
@@ -185,7 +185,7 @@ export default function ProfileScreen() {
         ) : (
           <TouchableOpacity
             onPress={handleLogin}
-            className="bg-primary py-3 px-4 rounded-2xl mt-2"
+            className="bg-primary py-3 px-4 rounded-2xl"
           >
             <Text className="text-white text-center font-semibold text-base">
               {t("profileTab.signInCreateAccount")}

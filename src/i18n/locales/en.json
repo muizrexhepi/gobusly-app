@@ -9,6 +9,43 @@
     "back": "Back",
     "next": "Next"
   },
+  "screens": {
+    "search": "Search",
+    "settings": "Settings",
+    "myTrips": "My Trips",
+    "profile": "Profile",
+    "home": "Home"
+  },
+  "passengers": {
+    "adultDesc": "Age 12+",
+    "childrenDesc": "Aged 0 to 12",
+    "ageNote": "Your age at the time of travel must meet the requirements for the selected ticket type. Some bus operators have restrictions on minors traveling alone."
+  },
+  "search": {
+    "from": "FROM",
+    "to": "TO",
+    "departure": "DEPARTURE DATE",
+    "passengers": "PASSENGERS",
+    "selectDeparture": "Select departure",
+    "selectDestination": "Select destination",
+    "selectDate": "Select date",
+    "selectPassengers": "Select passengers",
+    "search": "Search",
+    "validation": {
+      "missingFields": "Missing Information",
+      "selectStations": "Please select both departure and destination stations.",
+      "selectDepartureDate": "Please select a departure date."
+    },
+    "adult": "Adult",
+    "adults": "Adults",
+    "child": "Child",
+    "children": "Children",
+    "searchStations": "Search stations or cities",
+    "noStationsFound": "No stations found",
+    "noNearbyStations": "Nearby stations are not available",
+    "useMyLocation": "Use My Location",
+    "loadingStations": "Loading stations..."
+  },
   "auth": {
     "login": "Sign In",
     "logout": "Sign Out",

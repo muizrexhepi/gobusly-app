@@ -1,9 +1,9 @@
 import { LANGUAGES } from "@/src/constants/languages";
 import i18n from "@/src/i18n";
+import { profileService } from "@/src/services/api/profile";
 import { useAuthStore } from "@/src/stores/authStore";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -77,7 +77,6 @@ const Section = ({ children }: { children: React.ReactNode }) => (
 const LANGUAGE_STORAGE_KEY = "@user_language";
 
 export default function LanguageScreen() {
-  const router = useRouter();
   const { t } = useTranslation();
   const { user, updateUser, isAuthenticated } = useAuthStore();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
@@ -89,7 +88,6 @@ export default function LanguageScreen() {
       try {
         let savedLanguage = i18n.language || "en";
 
-        // Priority: authenticated user's preference > i18n current language > AsyncStorage > default
         if (isAuthenticated && user?.language) {
           savedLanguage = user.language;
         } else if (!i18n.language || i18n.language === "cimode") {
@@ -102,7 +100,6 @@ export default function LanguageScreen() {
 
         setSelectedLanguage(savedLanguage);
 
-        // Ensure i18n is in sync
         if (i18n.language !== savedLanguage) {
           await i18n.changeLanguage(savedLanguage);
         }
@@ -123,14 +120,21 @@ export default function LanguageScreen() {
     setUpdatingLanguage(languageCode);
 
     try {
-      // Optimistic update
       setSelectedLanguage(languageCode);
       await i18n.changeLanguage(languageCode);
       await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, languageCode);
 
       if (isAuthenticated && user) {
-        updateUser({ language: languageCode });
-        console.log("Language updated in user profile:", languageCode);
+        try {
+          await profileService.updateLanguage(user._id, languageCode);
+          updateUser({ language: languageCode });
+          console.log(
+            "Language updated in user profile (API + local):",
+            languageCode
+          );
+        } catch (err) {
+          console.error("Failed to update language in backend:", err);
+        }
       }
 
       const languageName = t(`languages.${languageCode}`);
@@ -146,7 +150,6 @@ export default function LanguageScreen() {
       console.error("Failed to save language", error);
       Alert.alert(t("common.error"), "Failed to update language");
 
-      // Revert optimistic update
       await i18n.changeLanguage(selectedLanguage);
       setSelectedLanguage(selectedLanguage);
     } finally {

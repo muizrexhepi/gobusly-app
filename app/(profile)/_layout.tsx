@@ -1,9 +1,11 @@
 import { Stack, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { TouchableOpacity } from "react-native";
 
 export default function ProfileLayout() {
   const router = useRouter();
+  const { t } = useTranslation();
   const primaryDark = "#15203e";
 
   const backButton = () => (
@@ -31,28 +33,32 @@ export default function ProfileLayout() {
     >
       <Stack.Screen
         name="personal-info"
-        options={{ headerTitle: "Personal Information" }}
+        options={{ headerTitle: t("profileTab.personalInformation") }}
       />
       <Stack.Screen
         name="station-locations"
-        options={{ headerTitle: "Station Locations" }}
+        options={{ headerTitle: t("profileTab.stationLocations") }}
       />
-
-      <Stack.Screen name="language" options={{ headerTitle: "Language" }} />
+      <Stack.Screen
+        name="language"
+        options={{ headerTitle: t("profileTab.language") }}
+      />
       <Stack.Screen
         name="notifications"
-        options={{ headerTitle: "Notifications" }}
+        options={{ headerTitle: t("profileTab.notifications") }}
       />
       <Stack.Screen
         name="privacy-settings"
-        options={{ headerTitle: "Privacy Settings" }}
+        options={{ headerTitle: t("profileTab.privacySettings") }}
       />
       <Stack.Screen
         name="booking-history"
-        options={{ headerTitle: "Booking History" }}
+        options={{ headerTitle: t("profileTab.bookingHistory") }}
       />
-
-      <Stack.Screen name="inbox" options={{ headerTitle: "Inbox" }} />
+      <Stack.Screen
+        name="inbox"
+        options={{ headerTitle: t("profileTab.inbox") }}
+      />
     </Stack>
   );
 }

@@ -9,6 +9,43 @@
     "back": "Zurück",
     "next": "Weiter"
   },
+  "screens": {
+    "search": "Suche",
+    "settings": "Einstellungen",
+    "myTrips": "Meine Reisen",
+    "profile": "Profil",
+    "home": "Startseite"
+  },
+  "passengers": {
+    "adultDesc": "12+ Jahre",
+    "childrenDesc": "0 bis 12 Jahre",
+    "ageNote": "Ihr Alter zum Zeitpunkt der Reise muss den Anforderungen des ausgewählten Tickettyps entsprechen. Einige Busanbieter haben Einschränkungen für minderjährige Alleinreisende."
+  },
+  "search": {
+    "from": "VON",
+    "to": "NACH",
+    "departure": "ABREISEDATUM",
+    "passengers": "PASSAGIERE",
+    "selectDeparture": "Abfahrtsort auswählen",
+    "selectDestination": "Ziel auswählen",
+    "selectDate": "Datum auswählen",
+    "selectPassengers": "Passagiere auswählen",
+    "search": "Suchen",
+    "validation": {
+      "missingFields": "Fehlende Informationen",
+      "selectStations": "Bitte wählen Sie sowohl Abfahrts- als auch Zielstation aus.",
+      "selectDepartureDate": "Bitte wählen Sie ein Abreisedatum."
+    },
+    "adult": "Erwachsener",
+    "adults": "Erwachsene",
+    "child": "Kind",
+    "children": "Kinder",
+    "searchStations": "Stationen oder Städte suchen",
+    "noStationsFound": "Keine Stationen gefunden",
+    "noNearbyStations": "Keine nahegelegenen Stationen verfügbar",
+    "useMyLocation": "Meinen Standort verwenden",
+    "loadingStations": "Stationen werden geladen..."
+  },
   "auth": {
     "login": "Anmelden",
     "logout": "Abmelden",

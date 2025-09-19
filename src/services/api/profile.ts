@@ -2,12 +2,12 @@ import { UserNotifications, UserPrivacySettings } from "@/src/types/auth";
 import { apiClient } from "./client";
 
 export interface ProfileUpdateResponse {
-  _id: string; // Changed from 'id' to '_id' to match your structure
+  _id: string;
   name?: string;
   phone?: string;
   email?: string;
   notifications?: UserNotifications;
-  privacySettings?: UserPrivacySettings; // Added privacy settings
+  privacySettings?: UserPrivacySettings;
   message?: string;
 }
 
@@ -72,12 +72,10 @@ class ProfileService {
 
     console.log("editNotifications response:", response.data);
 
-    // Check if it's a success response (even if it doesn't have _id)
     if (
       response.data?.message?.includes("successfully") ||
       response.status === 200
     ) {
-      // Return a valid response structure for successful updates
       return {
         _id: userId,
         message: response.data?.message || "Notification updated successfully",
@@ -86,7 +84,6 @@ class ProfileService {
       };
     }
 
-    // Only throw error if it's actually an error response
     if (
       !response.data?._id &&
       !response.data?.message?.includes("successfully")
@@ -99,11 +96,26 @@ class ProfileService {
     return response.data;
   }
 
+  async updateLanguage(
+    userId: string,
+    language: string
+  ): Promise<ProfileUpdateResponse> {
+    const response = await apiClient.post(`/auth/language/update/${userId}`, {
+      language,
+    });
+
+    if (!response.data?._id) {
+      throw new Error(response.data?.message || "Failed to update language");
+    }
+
+    return response.data;
+  }
+
   async editPrivacySettings(
     userId: string,
     privacySettings: UserPrivacySettings
   ): Promise<ProfileUpdateResponse> {
-    const response = await apiClient.post(`/auth/privacy/update/${userId}`, {
+    const response = await apiClient.post(`/privacy/update?user_id=${userId}`, {
       privacySettings,
     });
     if (!response.data?._id) {
@@ -161,11 +173,14 @@ class ProfileService {
     return response.data;
   }
 
-  // Export user data for GDPR compliance
   async exportUserData(userId: string): Promise<Blob> {
-    const response = await apiClient.get(`/profile/${userId}/export`, {
-      responseType: "blob",
-    });
+    const response = await apiClient.get(
+      `/auth/export-profile-data/${userId}`,
+      {
+        responseType: "blob",
+        timeout: 60000,
+      }
+    );
     return response.data;
   }
 }

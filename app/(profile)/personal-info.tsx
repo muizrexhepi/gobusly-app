@@ -207,7 +207,7 @@ const Section = ({ children }: { children: React.ReactNode }) => (
 
 export default function PersonalInformationScreen() {
   const { t } = useTranslation();
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, logout } = useAuthStore();
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempName, setTempName] = useState(user?.name || "");
   const [tempPhone, setTempPhone] = useState(user?.phone || "");
@@ -215,6 +215,7 @@ export default function PersonalInformationScreen() {
   const [originalPhone, setOriginalPhone] = useState(user?.phone || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isPrimaryPassenger, setIsPrimaryPassenger] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const loadPrimaryPassengerSetting = async () => {
@@ -435,6 +436,63 @@ export default function PersonalInformationScreen() {
     );
   };
 
+  // New function to handle account deletion
+  const handleDeleteAccount = async () => {
+    if (!user?._id) {
+      Alert.alert(
+        t("common.error", "Error"),
+        t("personalInfo.noUserError", "User not found.")
+      );
+      return;
+    }
+
+    Alert.alert(
+      t("personalInfo.deleteAccountConfirmTitle", "Delete Account"),
+      t(
+        "personalInfo.deleteAccountConfirmMessage",
+        "Are you sure you want to permanently delete your account? This action cannot be undone."
+      ),
+      [
+        {
+          text: t("common.cancel", "Cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("personalInfo.deleteAccount", "Delete Account"),
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await profileService.deleteAccount(
+                user._id,
+                "User requested deletion from app"
+              );
+              Alert.alert(
+                t("common.success", "Success"),
+                t(
+                  "personalInfo.deleteSuccess",
+                  "Your account has been successfully deleted."
+                )
+              );
+              logout();
+            } catch (error: any) {
+              Alert.alert(
+                t("common.error", "Error"),
+                error.message ||
+                  t(
+                    "personalInfo.deleteError",
+                    "Failed to delete account. Please try again."
+                  )
+              );
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <TouchableWithoutFeedback onPress={handleBackgroundTap}>
       <View className="flex-1 bg-gray-100">
@@ -524,7 +582,28 @@ export default function PersonalInformationScreen() {
             </View>
           </Section>
 
-          {/* Add some bottom padding for better scrolling */}
+          {/* Delete Account Button */}
+          <View className="mx-4 mt-2">
+            <TouchableOpacity
+              onPress={handleDeleteAccount}
+              className={`flex-row items-center justify-center p-4 rounded-full ${
+                isDeleting ? "bg-red-300" : "bg-red-500"
+              }`}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <View className="flex-row items-center">
+                  <Ionicons name="trash-outline" size={20} color="#fff" />
+                  <Text className="text-white font-semibold text-base ml-2">
+                    {t("personalInfo.deleteAccount", "Delete Account")}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
           <View className="h-6" />
         </ScrollView>
       </View>

@@ -2,9 +2,12 @@ import { Colors } from "@/src/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -39,7 +42,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Search",
+          title: t("screens.search"),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "search-sharp" : "search-outline"}
@@ -52,9 +55,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="bookings"
         options={{
-          title: "My Trips",
+          title: t("screens.myTrips"),
           headerShown: true,
-          headerTitle: "My Trips",
+          headerTitle: t("screens.myTrips"),
           headerStyle: {
             backgroundColor: Colors.background.light,
             borderBottomWidth: StyleSheet.hairlineWidth,
@@ -76,11 +79,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="settings"
         options={{
-          title: "Profile",
+          title: t("screens.settings"),
           headerShown: true,
-          headerTitle: "Profile",
+          headerTitle: t("screens.settings"),
           headerStyle: {
             backgroundColor: Colors.background.light,
             borderBottomWidth: StyleSheet.hairlineWidth,
@@ -94,7 +97,7 @@ export default function TabLayout() {
           headerTintColor: Colors.primary,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? "person" : "person-outline"}
+              name={focused ? "settings" : "settings-outline"}
               color={color}
               size={size}
             />

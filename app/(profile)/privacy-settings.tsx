@@ -43,7 +43,6 @@ const MenuItem = ({
   isLastItem?: boolean;
 }) => {
   if (isSwitch) {
-    // For switch items, only the switch should be touchable, not the whole row
     return (
       <View
         className={`flex-row items-center p-4 ${disabled ? "opacity-60" : ""} ${
@@ -249,7 +248,6 @@ export default function PrivacySettingsScreen() {
   };
 
   const handleToggle = async (key: keyof UserPrivacySettings) => {
-    // Prevent multiple simultaneous updates
     if (loadingKey) return;
 
     setLoadingKey(key);
@@ -263,7 +261,6 @@ export default function PrivacySettingsScreen() {
       );
 
       if (isAuthenticated && user?._id) {
-        // Optimistic update
         const updatedSettings: UserPrivacySettings = {
           ...currentSettings,
           [key]: newValue,
@@ -271,30 +268,25 @@ export default function PrivacySettingsScreen() {
         updateUser({ privacySettings: updatedSettings });
 
         try {
-          // Call API to sync with backend
           const response = await profileService.editPrivacySettings(
             user._id,
             updatedSettings
           );
           console.log("Privacy API response:", response);
 
-          // If the API returns updated settings, use those
           if (response.privacySettings) {
             updateUser({ privacySettings: response.privacySettings });
           }
         } catch (apiError: any) {
           console.error(`Privacy API call failed for ${key}:`, apiError);
 
-          // Revert optimistic update on API failure
           updateUser({ privacySettings: currentSettings });
 
-          // Only show error if it's not a success message being treated as error
           if (!apiError.message?.includes("successfully")) {
             throw apiError;
           }
         }
       } else {
-        // For guest mode
         const updatedSettings: UserPrivacySettings = {
           ...currentSettings,
           [key]: newValue,
@@ -314,6 +306,27 @@ export default function PrivacySettingsScreen() {
       );
     } finally {
       setLoadingKey(null);
+    }
+  };
+
+  const handleExportData = async () => {
+    if (!user?._id) return;
+
+    try {
+      const blob = await profileService.exportUserData(user._id);
+      console.log({ blob });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "user-data.json";
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+
+      console.log("User data exported successfully");
+    } catch (error) {
+      console.error("Failed to export user data:", error);
+      Alert.alert("Error", "Could not export user data.");
     }
   };
 
@@ -435,11 +448,7 @@ export default function PrivacySettingsScreen() {
               "privacyScreen.exportDataDescription",
               "Download a copy of your personal data"
             )}
-            onPress={() =>
-              WebBrowser.openBrowserAsync(
-                "https://gobusly.com/user/data-export"
-              )
-            }
+            onPress={handleExportData}
             isLastItem
           />
         )}

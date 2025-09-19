@@ -9,6 +9,43 @@
     "back": "Kthehu",
     "next": "Tjetër"
   },
+  "screens": {
+    "search": "Kërko",
+    "settings": "Cilësimet",
+    "myTrips": "Udhëtimet e mia",
+    "profile": "Profili",
+    "home": "Kryefaqja"
+  },
+  "passengers": {
+    "adultDesc": "Mosha 12+",
+    "childrenDesc": "Mosha 0 deri 12",
+    "ageNote": "Mosha juaj në kohën e udhëtimit duhet të përmbushë kërkesat për llojin e biletës të zgjedhur. Disa operatorë autobusi kanë kufizime për të miturit që udhëtojnë vetëm."
+  },
+  "search": {
+    "from": "NGA",
+    "to": "DERI",
+    "departure": "DATA E NISJES",
+    "passengers": "PASAGJERËT",
+    "selectDeparture": "Zgjidh vendin e nisjes",
+    "selectDestination": "Zgjidh destinacionin",
+    "selectDate": "Zgjidh datën",
+    "selectPassengers": "Zgjidh pasagjerët",
+    "search": "Kërko",
+    "validation": {
+      "missingFields": "Mungojnë të dhënat",
+      "selectStations": "Ju lutemi zgjidhni stacionin e nisjes dhe destinacionin.",
+      "selectDepartureDate": "Ju lutemi zgjidhni datën e nisjes."
+    },
+    "adult": "Të rritur",
+    "adults": "Të rritur",
+    "child": "Fëmijë",
+    "children": "Fëmijë",
+    "searchStations": "Kërko stacione ose qytete",
+    "noStationsFound": "Nuk u gjetën stacione",
+    "noNearbyStations": "Stacionet afër nuk janë të disponueshme",
+    "useMyLocation": "Përdor vendndodhjen time",
+    "loadingStations": "Duke ngarkuar stacionet..."
+  },
   "auth": {
     "login": "Hyr",
     "logout": "Dil",

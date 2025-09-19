@@ -9,6 +9,43 @@
     "back": "Indietro",
     "next": "Avanti"
   },
+  "screens": {
+    "search": "Cerca",
+    "settings": "Impostazioni",
+    "myTrips": "I miei viaggi",
+    "profile": "Profilo",
+    "home": "Home"
+  },
+  "passengers": {
+    "adultDesc": "Età 12+",
+    "childrenDesc": "Età da 0 a 12",
+    "ageNote": "La tua età al momento del viaggio deve soddisfare i requisiti per il tipo di biglietto selezionato. Alcuni operatori di autobus hanno restrizioni per i minori che viaggiano da soli."
+  },
+  "search": {
+    "from": "DA",
+    "to": "A",
+    "departure": "DATA DI PARTENZA",
+    "passengers": "PASSEGGERI",
+    "selectDeparture": "Seleziona partenza",
+    "selectDestination": "Seleziona destinazione",
+    "selectDate": "Seleziona data",
+    "selectPassengers": "Seleziona passeggeri",
+    "search": "Cerca",
+    "validation": {
+      "missingFields": "Informazioni mancanti",
+      "selectStations": "Seleziona sia la stazione di partenza che quella di arrivo.",
+      "selectDepartureDate": "Seleziona una data di partenza."
+    },
+    "adult": "Adulto",
+    "adults": "Adulti",
+    "child": "Bambino",
+    "children": "Bambini",
+    "searchStations": "Cerca stazioni o città",
+    "noStationsFound": "Nessuna stazione trovata",
+    "noNearbyStations": "Nessuna stazione vicina disponibile",
+    "useMyLocation": "Usa la mia posizione",
+    "loadingStations": "Caricamento stazioni..."
+  },
   "auth": {
     "login": "Accedi",
     "logout": "Esci",
